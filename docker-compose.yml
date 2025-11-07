@@ -1,0 +1,26 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: django-spec-gen
+    ports:
+      - "8000:8000"
+    volumes:
+      # 掛載資料庫（資料持久化）
+      - ./mysite/db.sqlite3:/app/mysite/db.sqlite3
+      # 掛載環境變數檔案
+      - ./.env:/app/.env:ro
+      # 掛載靜態檔案目錄（開發時即時更新）
+      - ./mysite/static:/app/mysite/static
+    environment:
+      - PYTHONUNBUFFERED=1
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+    networks:
+      - django-network
+
+networks:
+  django-network:
+    driver: bridge

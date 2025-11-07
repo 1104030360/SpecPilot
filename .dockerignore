@@ -1,0 +1,52 @@
+# Python 虛擬環境
+venv/
+env/
+ENV/
+
+# Python 快取檔案
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# 測試和覆蓋率報告
+.pytest_cache/
+.coverage
+htmlcov/
+*.cover
+
+# IDE 設定
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Git 版本控制
+.git/
+.gitignore
+
+# 環境變數（不打包進映像）
+.env
+
+# 資料庫（透過 volume 掛載）
+*.sqlite3
+
+# macOS 檔案
+.DS_Store
+
+# 日誌檔案
+*.log
+
+# 暫存檔案
+tmp/
+temp/
+
+# 文件檔案（減少映像大小）
+docs/
+*.md
+GEMINI.md
+README.md
+
+# 開發提示檔案
+dev-prompts/

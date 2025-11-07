@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>欄位優先順序配置</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; padding: 2rem; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; margin-bottom: 1.5rem; }
+        h2 { color: #34495e; margin-top: 2rem; margin-bottom: 1rem; font-size: 1.3rem; }
+        .form-group { margin-bottom: 1.2rem; }
+        label { display: block; font-weight: 600; color: #555; margin-bottom: 0.5rem; }
+        input[type="text"] { width: 100%; padding: 0.6rem; border: 1px solid #ddd; border-radius: 6px; font-size: 1rem; }
+        button { background: #3498db; color: white; padding: 0.7rem 1.5rem; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem; font-weight: 600; margin-right: 0.5rem; }
+        button:hover { background: #2980b9; }
+        button.delete { background: #e74c3c; }
+        button.delete:hover { background: #c0392b; }
+        button.add-field { background: #27ae60; }
+        button.add-field:hover { background: #229954; }
+        .error { color: #e74c3c; font-weight: 600; margin-top: 0.5rem; }
+        .success { color: #27ae60; font-weight: 600; margin-top: 0.5rem; }
+        .field-list { background: #f8f9fa; padding: 1.5rem; border-radius: 6px; margin-bottom: 1rem; }
+        .field-item { background: white; padding: 0.8rem 1rem; border-radius: 6px; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; border-left: 3px solid #3498db; cursor: move; }
+        .field-item:hover { background: #ecf0f1; }
+        .field-order { background: #3498db; color: white; padding: 0.3rem 0.8rem; border-radius: 50%; font-weight: 600; margin-right: 0.5rem; }
+        .config-list { margin-top: 1.5rem; }
+        .config-item { background: #f8f9fa; padding: 1rem; border-radius: 6px; margin-bottom: 1rem; border-left: 4px solid #9b59b6; }
+        .config-item h3 { color: #2c3e50; margin-bottom: 0.5rem; }
+        .config-item p { color: #7f8c8d; margin-bottom: 0.3rem; }
+        .field-tag { display: inline-block; background: #e8f4f8; color: #2980b9; padding: 0.2rem 0.6rem; border-radius: 4px; margin: 0.2rem; font-size: 0.9rem; }
+        .json-input { width: 100%; min-height: 100px; padding: 0.6rem; border: 1px solid #ddd; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 0.95rem; }
+        .input-mode { background: #fff3cd; padding: 1rem; border-radius: 6px; margin-bottom: 1rem; border-left: 4px solid #ffc107; }
+        .input-mode label { display: inline; margin-right: 1rem; }
+        .btn-group { display: flex; gap: 0.5rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📝 欄位優先順序配置</h1>
+        
+        <div class="input-mode">
+            <label>
+                <input type="radio" name="input-mode" value="visual" checked onchange="toggleInputMode()">
+                視覺化編輯
+            </label>
+            <label>
+                <input type="radio" name="input-mode" value="json" onchange="toggleInputMode()">
+                JSON 編輯
+            </label>
+        </div>
+        
+        <div class="form-group">
+            <label for="config-name">配置名稱 *</label>
+            <input type="text" id="config-name" placeholder="例如：Excel 欄位順序">
+        </div>
+        
+        <div id="visual-editor">
+            <label>欄位順序（拖曳調整順序）</label>
+            <div class="field-list" id="field-list">
+                <p style="color: #7f8c8d;">尚無欄位，點擊下方按鈕新增</p>
+            </div>
+            
+            <div class="form-group">
+                <input type="text" id="new-field-name" placeholder="輸入欄位名稱，例如：opened">
+                <button onclick="addField()" class="add-field">➕ 新增欄位</button>
+            </div>
+        </div>
+        
+        <div id="json-editor" style="display:none;">
+            <label>JSON 陣列格式</label>
+            <textarea class="json-input" id="json-input" placeholder='["field1", "field2", "field3"]'></textarea>
+        </div>
+        
+        <div class="btn-group">
+            <button onclick="saveConfig()">儲存配置</button>
+            <button onclick="resetForm()" style="background: #95a5a6;">重置</button>
+        </div>
+        
+        <div id="message"></div>
+        
+        <h2>📋 現有配置</h2>
+        <div class="config-list" id="config-list">
+            <p style="color: #7f8c8d;">載入中...</p>
+        </div>
+    </div>
+    
+    <script>
+        let fields = [];
+        let draggedIndex = null;
+        
+        // 切換輸入模式
+        function toggleInputMode() {
+            const mode = document.querySelector('input[name="input-mode"]:checked').value;
+            const visualEditor = document.getElementById('visual-editor');
+            const jsonEditor = document.getElementById('json-editor');
+            
+            if (mode === 'visual') {
+                visualEditor.style.display = 'block';
+                jsonEditor.style.display = 'none';
+                // 從 JSON 更新視覺編輯器
+                try {
+                    const jsonValue = document.getElementById('json-input').value.trim();
+                    if (jsonValue) {
+                        fields = JSON.parse(jsonValue);
+                        renderFields();
+                    }
+                } catch (e) {
+                    console.error('JSON 解析失敗:', e);
+                }
+            } else {
+                visualEditor.style.display = 'none';
+                jsonEditor.style.display = 'block';
+                // 更新 JSON
+                document.getElementById('json-input').value = JSON.stringify(fields, null, 2);
+            }
+        }
+        
+        // 新增欄位
+        function addField() {
+            const fieldName = document.getElementById('new-field-name').value.trim();
+            if (!fieldName) {
+                alert('請輸入欄位名稱');
+                return;
+            }
+            
+            if (fields.includes(fieldName)) {
+                alert('欄位已存在');
+                return;
+            }
+            
+            fields.push(fieldName);
+            renderFields();
+            document.getElementById('new-field-name').value = '';
+        }
+        
+        // 移除欄位
+        function removeField(index) {
+            fields.splice(index, 1);
+            renderFields();
+        }
+        
+        // 渲染欄位列表
+        function renderFields() {
+            const listDiv = document.getElementById('field-list');
+            
+            if (fields.length === 0) {
+                listDiv.innerHTML = '<p style="color: #7f8c8d;">尚無欄位，點擊下方按鈕新增</p>';
+                return;
+            }
+            
+            listDiv.innerHTML = '';
+            fields.forEach((field, index) => {
+                const div = document.createElement('div');
+                div.className = 'field-item';
+                div.draggable = true;
+                div.innerHTML = `
+                    <div>
+                        <span class="field-order">${index + 1}</span>
+                        <span>${field}</span>
+                    </div>
+                    <button onclick="removeField(${index});" class="delete" style="padding: 0.3rem 0.8rem;">✕</button>
+                `;
+                
+                // 拖曳事件
+                div.addEventListener('dragstart', () => {
+                    draggedIndex = index;
+                    div.style.opacity = '0.5';
+                });
+                
+                div.addEventListener('dragend', () => {
+                    div.style.opacity = '1';
+                });
+                
+                div.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                });
+                
+                div.addEventListener('drop', () => {
+                    if (draggedIndex !== null && draggedIndex !== index) {
+                        const draggedField = fields[draggedIndex];
+                        fields.splice(draggedIndex, 1);
+                        fields.splice(index, 0, draggedField);
+                        renderFields();
+                    }
+                });
+                
+                listDiv.appendChild(div);
+            });
+        }
+        
+        // 儲存配置
+        async function saveConfig() {
+            const name = document.getElementById('config-name').value.trim();
+            const mode = document.querySelector('input[name="input-mode"]:checked').value;
+            
+            if (!name) {
+                showMessage('請輸入配置名稱', 'error');
+                return;
+            }
+            
+            let fieldOrder = fields;
+            
+            // 如果是 JSON 模式，從 textarea 讀取
+            if (mode === 'json') {
+                try {
+                    fieldOrder = JSON.parse(document.getElementById('json-input').value);
+                    if (!Array.isArray(fieldOrder)) {
+                        showMessage('JSON 必須是陣列格式', 'error');
+                        return;
+                    }
+                } catch (e) {
+                    showMessage('JSON 格式錯誤：' + e.message, 'error');
+                    return;
+                }
+            }
+            
+            if (fieldOrder.length === 0) {
+                showMessage('請至少新增一個欄位', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/polls/field-priority/', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({name, field_order: fieldOrder})
+                });
+                
+                const result = await response.json();
+                
+                if (result.error) {
+                    showMessage(result.error, 'error');
+                } else {
+                    showMessage('配置儲存成功！', 'success');
+                    resetForm();
+                    loadConfigs();
+                }
+            } catch (error) {
+                showMessage('儲存失敗：' + error.message, 'error');
+            }
+        }
+        
+        // 載入配置列表
+        async function loadConfigs() {
+            try {
+                const response = await fetch('/polls/field-priority/');
+                const result = await response.json();
+                const configs = result.configs || [];
+                
+                const listDiv = document.getElementById('config-list');
+                
+                if (configs.length === 0) {
+                    listDiv.innerHTML = '<p style="color: #7f8c8d;">尚無配置</p>';
+                } else {
+                    listDiv.innerHTML = '';
+                    
+                    configs.forEach(config => {
+                        const div = document.createElement('div');
+                        div.className = 'config-item';
+                        
+                        const fieldTags = config.field_order.map(f => `<span class="field-tag">${f}</span>`).join('');
+                        
+                        div.innerHTML = `
+                            <h3>${config.name}</h3>
+                            <p>欄位順序（${config.field_order.length} 個）：</p>
+                            <div>${fieldTags}</div>
+                            <button onclick="deleteConfig(${config.id});" class="delete" style="margin-top: 0.8rem;">刪除</button>
+                        `;
+                        listDiv.appendChild(div);
+                    });
+                }
+            } catch (error) {
+                console.error('載入失敗:', error);
+            }
+        }
+        
+        // 刪除配置
+        async function deleteConfig(id) {
+            if (!confirm('確定要刪除此配置嗎？')) return;
+            
+            try {
+                const response = await fetch(`/polls/field-priority/${id}/`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    showMessage('配置已刪除', 'success');
+                    loadConfigs();
+                } else {
+                    showMessage('刪除失敗', 'error');
+                }
+            } catch (error) {
+                showMessage('刪除失敗：' + error.message, 'error');
+            }
+        }
+        
+        // 顯示訊息
+        function showMessage(msg, type) {
+            const msgDiv = document.getElementById('message');
+            msgDiv.textContent = msg;
+            msgDiv.className = type;
+            setTimeout(() => msgDiv.textContent = '', 3000);
+        }
+        
+        // 重置表單
+        function resetForm() {
+            document.getElementById('config-name').value = '';
+            fields = [];
+            renderFields();
+            document.getElementById('json-input').value = '';
+            document.getElementById('new-field-name').value = '';
+        }
+        
+        // 初始化
+        window.onload = () => {
+            loadConfigs();
+            renderFields();
+        };
+    </script>
+</body>
+</html>

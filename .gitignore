@@ -1,0 +1,174 @@
+# ==========================================
+# 敏感資訊（絕對不能提交）
+# ==========================================
+# 環境變數（包含 API Keys、密鑰）
+.env
+.env.local
+.env.*.local
+
+# 資料庫檔案（包含用戶資料）
+*.sqlite3
+*.sqlite3-journal
+db.sqlite3
+db.sqlite3-journal
+
+# 日誌檔案（可能包含敏感資訊）
+*.log
+server_output.log
+
+# ==========================================
+# Python 相關
+# ==========================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ==========================================
+# Django 相關
+# ==========================================
+/media
+/staticfiles
+/static
+local_settings.py
+
+# ==========================================
+# 虛擬環境
+# ==========================================
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# ==========================================
+# IDE 和編輯器
+# ==========================================
+.vscode/
+.idea/
+.cursor/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+
+# ==========================================
+# 測試相關
+# ==========================================
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+.hypothesis/
+*.cover
+.cache
+nosetests.xml
+coverage.xml
+
+# ==========================================
+# Jupyter Notebook
+# ==========================================
+.ipynb_checkpoints
+
+# ==========================================
+# 專案特定檔案
+# ==========================================
+# FAISS 向量索引
+faiss_index/
+*.index
+
+# 上傳檔案（可能包含用戶資料）
+uploads/*
+!uploads/.gitkeep
+
+# 同步資料夾
+sync_folder/*
+!sync_folder/.gitkeep
+
+# Public 資料夾
+public/*
+!public/.gitkeep
+
+# ==========================================
+# 開發文件（內部使用，不公開）
+# ==========================================
+# 開發提示和筆記
+dev-prompts/
+GEMINI.md
+MANUAL.md
+ENV_SETUP.md
+OLLAMA_MIGRATION.md
+
+
+# 文件資料夾（全部排除）
+docs/
+
+# 測試檔案（開發用）
+test_*.py
+tests/
+pytest.ini
+
+# ==========================================
+# Celery 相關
+# ==========================================
+celerybeat-schedule
+celerybeat.pid
+
+# ==========================================
+# 備份檔案
+# ==========================================
+*.bak
+*.backup
+*.swp
+*.tmp
+backup.json
+
+# ==========================================
+# Docker 相關（保留設定檔，排除資料）
+# ==========================================
+# Docker volumes 和暫存
+.docker/
+docker-compose.override.yml
+
+# ==========================================
+# Git 相關
+# ==========================================
+*.orig
+*.rej
+
+# ==========================================
+# macOS 系統檔案
+# ==========================================
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# ==========================================
+# 其他
+# ==========================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

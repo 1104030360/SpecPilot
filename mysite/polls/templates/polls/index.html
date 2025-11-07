@@ -1,0 +1,2031 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 規格產生器 - 新版布局</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@11/marked.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --cr-main-1: #8b5cf6;
+            --cr-main-2: #f59e0b;
+            --cr-1: color-mix(in srgb, var(--cr-main-1), var(--cr-main-2) 20%);
+            --cr-2: color-mix(in srgb, var(--cr-main-1), var(--cr-main-2) 35%);
+            --cr-3: color-mix(in srgb, var(--cr-main-1), var(--cr-main-2) 50%);
+            --cr-4: color-mix(in srgb, var(--cr-main-1), var(--cr-main-2) 65%);
+            --cr-5: color-mix(in srgb, var(--cr-main-1), var(--cr-main-2) 80%);
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: whitesmoke;
+            overflow-x: hidden;
+        }
+        
+        /* 動畫背景球體 */
+        .blobs {
+            position: fixed;
+            z-index: -1;
+            top: 0; left: 0;
+            width: 100%; height: 100vh;
+            pointer-events: none;
+            filter: blur(140px);
+        }
+        
+        .blob {
+            width: max(240px, 28vw);
+            aspect-ratio: 1;
+            border-radius: 50%;
+            position: absolute;
+        }
+        
+        .blob:nth-of-type(1) { background: var(--cr-main-1); }
+        .blob:nth-of-type(2) { background: var(--cr-main-2); }
+        .blob:nth-of-type(3) { background: var(--cr-1); }
+        .blob:nth-of-type(4) { background: whitesmoke; }
+        .blob:nth-of-type(5) { background: var(--cr-3); }
+        .blob:nth-of-type(6) { background: var(--cr-4); }
+        .blob:nth-of-type(7) { background: var(--cr-2); }
+        
+        /* 容器布局 */
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        /* 左側導航 */
+        .sidebar {
+            width: 280px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(12px);
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 4px 0 24px rgba(42, 201, 222, 0.15);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+        
+        .sidebar-brand {
+            padding: 2rem 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(245, 158, 11, 0.1));
+        }
+        
+        .brand-title {
+            font-size: 1.6rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--cr-main-1), var(--cr-main-2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 2px 10px rgba(42, 201, 222, 0.2);
+        }
+        
+        .nav-menu {
+            list-style: none;
+            padding: 1.5rem 0;
+        }
+        
+        .nav-item {
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 0.75rem;
+            border-left: 3px solid transparent;
+            font-weight: 500;
+            color: rgba(0, 0, 0, 0.7);
+            text-decoration: none;
+            text-align: left;
+        }
+        
+        .nav-item:hover {
+            background: linear-gradient(90deg, rgba(139, 92, 246, 0.15), transparent);
+            border-left-color: var(--cr-main-1);
+            color: var(--cr-main-1);
+            transform: translateX(2px);
+        }
+        
+        .nav-item.active {
+            background: linear-gradient(90deg, rgba(245, 158, 11, 0.2), rgba(139, 92, 246, 0.1));
+            border-left-color: var(--cr-main-2);
+            font-weight: 600;
+            color: var(--cr-main-2);
+            box-shadow: inset 0 2px 8px rgba(245, 158, 11, 0.15);
+        }
+        
+        .nav-icon {
+            font-size: 1.25rem;
+            flex-shrink: 0;
+        }
+        
+        /* 主內容區 */
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 2rem;
+        }
+        
+        .content-section {
+            display: none;
+        }
+        
+        .content-section.active {
+            display: block;
+        }
+        
+        /* 頁面標題 */
+        .page-header {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 20px rgba(42, 201, 222, 0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .page-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--cr-main-1), var(--cr-main-2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        /* 卡片網格 */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 4px 16px rgba(42, 201, 222, 0.08);
+            transition: all 0.3s;
+            border: 1px solid rgba(42, 201, 222, 0.1);
+        }
+        
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 32px rgba(240, 135, 244, 0.15);
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid rgba(42, 201, 222, 0.1);
+        }
+        
+        .card-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .card-badge {
+            background: linear-gradient(135deg, var(--cr-main-1), var(--cr-main-2));
+            color: white;
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .card-content {
+            color: #555;
+            line-height: 1.8;
+            min-height: 120px;
+            max-height: 400px;
+            overflow-y: auto;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            word-break: break-word;
+        }
+        
+        /* 為卡片內容添加滾動條樣式 */
+        .card-content::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .card-content::-webkit-scrollbar-track {
+            background: rgba(42, 201, 222, 0.05);
+            border-radius: 4px;
+        }
+        
+        .card-content::-webkit-scrollbar-thumb {
+            background: rgba(42, 201, 222, 0.3);
+            border-radius: 4px;
+        }
+        
+        .card-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(42, 201, 222, 0.5);
+        }
+        
+        /* 確保代碼塊也不會跑版 */
+        .card-content pre,
+        .card-content code {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            word-break: break-word;
+            max-width: 100%;
+        }
+        
+        .card-actions {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(0, 0, 0, 0.06);
+        }
+        
+        /* 表單樣式 */
+        .form-card {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 4px 16px rgba(42, 201, 222, 0.08);
+            margin-bottom: 2rem;
+        }
+        
+        label {
+            display: block;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        input[type="text"],
+        input[type="number"],
+        textarea {
+            width: 100%;
+            padding: 0.875rem;
+            border: 2px solid rgba(42, 201, 222, 0.2);
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s;
+            background: white;
+            font-family: inherit;
+        }
+        
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--cr-main-1);
+            box-shadow: 0 0 0 4px rgba(42, 201, 222, 0.1);
+        }
+        
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        button {
+            padding: 0.875rem 1.75rem;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: linear-gradient(135deg, var(--cr-main-1), var(--cr-main-2));
+            color: white;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(42, 201, 222, 0.3);
+        }
+        
+        button.btn-secondary {
+            background: rgba(42, 201, 222, 0.12);
+            color: var(--cr-main-1);
+        }
+        
+        button.btn-secondary:hover {
+            background: rgba(42, 201, 222, 0.2);
+        }
+        
+        button.btn-secondary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        button.btn-secondary:disabled:hover {
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .btn-loading {
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .error-message {
+            background: #fff3cd;
+            color: #856404;
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            border: 1px solid #ffc107;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .error-message::before {
+            content: "⚠️";
+            font-size: 1.2rem;
+        }
+        
+        /* Loading 彈窗 */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        
+        .loading-overlay.show {
+            display: flex;
+        }
+        
+        .loading-content {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 3rem;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: fadeInScale 0.3s ease;
+        }
+        
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(42, 201, 222, 0.2);
+            border-top: 4px solid var(--cr-main-1);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1.5rem;
+        }
+        
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            font-size: 1.25rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, var(--cr-main-1), var(--cr-main-2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+        
+        .loading-subtext {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        /* 響應式設計 */
+        @media (max-width: 968px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s;
+            }
+            
+            .sidebar.mobile-show {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .cards-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading 彈窗 -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">AI 正在生成規格文件</div>
+            <div class="loading-subtext">請稍候，這可能需要幾秒鐘...</div>
+        </div>
+    </div>
+    
+    <!-- 背景動畫 -->
+    <div class="blobs">
+        <div class="blob"></div>
+        <div class="blob"></div>
+        <div class="blob"></div>
+        <div class="blob"></div>
+        <div class="blob"></div>
+        <div class="blob"></div>
+        <div class="blob"></div>
+    </div>
+    
+    <div class="container">
+        <!-- 側邊欄 -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-title">規格產生器</div>
+            </div>
+                        <nav class="nav-menu">
+                <a href="#" class="nav-item active" onclick="switchSection('idea'); return false;">
+                    <span class="nav-icon"></span> AI 想法衍生
+                </a>
+                <a href="#" class="nav-item" onclick="switchSection('generator'); return false;">
+                    <span class="nav-icon"></span> 規格生成器
+                </a>
+                <a href="#" class="nav-item" onclick="switchSection('advanced'); return false;">
+                    <span class="nav-icon"></span> 進階規格產出
+                </a>
+                <a href="#" class="nav-item" onclick="switchSection('results'); return false;">
+                    <span class="nav-icon"></span> 生成結果
+                </a>
+                <a href="#" class="nav-item" onclick="switchSection('weight'); return false;">
+                    權重配置
+                </a>
+            </nav>
+        </aside>
+        
+        <!-- 主內容 -->
+        <main class="main-content">
+            <!-- AI 想法衍生區 -->
+            <section id="section-idea" class="content-section active">
+                <div class="page-header">
+                    <h1 class="page-title">AI 想法衍生器</h1>
+                </div>
+                
+                <div class="form-card">
+                    <form id="llm-idea-form" onsubmit="return submitIdea(event)">
+                        <label for="idea-input">輸入你的想法</label>
+                        <input type="text" id="idea-input" placeholder="隨便輸入幾句話，AI 會幫你衍生出三個詳細想法..." required>
+                        <button type="submit" style="margin-top: 1.5rem;">AI 衍生三個詳細想法</button>
+                        <div id="llm-idea-error" class="error-message" style="display:none;"></div>
+                    </form>
+                </div>
+                
+                <div id="llm-idea-result-cards"></div>
+            </section>
+            
+            <!-- 規格生成器區 -->
+            <section id="section-generator" class="content-section">
+                <div class="page-header">
+                    <h1 class="page-title">規格生成器</h1>
+                </div>
+                
+                <div class="form-card">
+                    <form method="POST" id="spec-form" onsubmit="showLoading()">
+                        {% csrf_token %}
+                        
+                        <!-- 顯示選中的想法 -->
+                        <div id="selected-idea-display" style="display:none; background: rgba(42, 201, 222, 0.1); padding: 1rem; border-radius: 10px; margin-bottom: 1.5rem; border-left: 4px solid var(--cr-main-1);">
+                            <strong style="color: var(--cr-main-1);">📌 已選擇的想法：</strong>
+                            <p id="selected-idea-text" style="margin-top: 0.5rem; color: #555;"></p>
+                        </div>
+                        
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <label for="project_goal">專案目標 <span style="color:#e74c3c">*</span></label>
+                            <button type="button" class="btn-secondary" id="btn-project_goal" onclick="generateFieldAsync('project_goal')" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+                                <span class="btn-text">AI 生成</span>
+                                <span class="btn-loading" style="display:none;">生成中...</span>
+                            </button>
+                        </div>
+                        <textarea id="project_goal" name="project_goal" placeholder="簡述專案想達成的目標" required>{{ project_goal }}</textarea>
+                        
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
+                            <label for="core_features">核心功能 <span style="color:#e74c3c">*</span></label>
+                            <button type="button" class="btn-secondary" id="btn-core_features" onclick="generateFieldAsync('core_features')" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+                                <span class="btn-text">AI 生成</span>
+                                <span class="btn-loading" style="display:none;">生成中...</span>
+                            </button>
+                        </div>
+                        <textarea id="core_features" name="core_features" placeholder="主要功能有哪些？" required>{{ core_features }}</textarea>
+                        
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
+                            <label for="technical_constraints">技術限制 <span style="color:#e74c3c">*</span></label>
+                            <button type="button" class="btn-secondary" id="btn-technical_constraints" onclick="generateFieldAsync('technical_constraints')" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+                                <span class="btn-text">AI 生成</span>
+                                <span class="btn-loading" style="display:none;">生成中...</span>
+                            </button>
+                        </div>
+                        <textarea id="technical_constraints" name="technical_constraints" placeholder="有無指定的程式語言、框架或平台？" required>{{ technical_constraints }}</textarea>
+                        
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
+                            <label for="target_audience">目標使用者 <span style="color:#e74c3c">*</span></label>
+                            <button type="button" class="btn-secondary" id="btn-target_audience" onclick="generateFieldAsync('target_audience')" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+                                <span class="btn-text">AI 生成</span>
+                                <span class="btn-loading" style="display:none;">生成中...</span>
+                            </button>
+                        </div>
+                        <textarea id="target_audience" name="target_audience" placeholder="這個專案是做給誰用的？" required>{{ target_audience }}</textarea>
+                        
+                        <!-- 一鍵生成所有欄位按鈕 -->
+                        <div style="margin-top: 1.5rem; padding: 1rem; background: linear-gradient(135deg, rgba(139, 92, 246, 0.12), rgba(245, 158, 11, 0.12)); border-radius: 10px; text-align: center;">
+                            <button type="button" class="btn-primary" onclick="generateAllFieldsAsync()" style="width: 100%; padding: 0.875rem; font-size: 1rem;">
+                                ✨ 一鍵生成所有欄位
+                            </button>
+                        </div>
+                        
+                        {% if form_error %}
+                        <div class="error-message">{{ form_error }}</div>
+                        {% endif %}
+                        
+                        <button type="submit" style="margin-top: 1.5rem;">生成規格文件</button>
+                    </form>
+                </div>
+            </section>
+            
+            <!-- 生成結果區 -->
+            <section id="section-results" class="content-section">
+                <div class="page-header">
+                    <h1 class="page-title">生成結果</h1>
+                </div>
+                
+                <div class="cards-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">背景說明</h3>
+                            <span class="card-badge">Background</span>
+                        </div>
+                        <div class="card-content" id="section-background">
+                            {{ spec_background|safe }}
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn-secondary" onclick="copySection('background')">複製</button>
+                            <button class="btn-secondary" onclick="downloadSection('background', '背景說明')">下載 MD</button>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">專案目標</h3>
+                            <span class="card-badge">Goal</span>
+                        </div>
+                        <div class="card-content" id="section-goal">
+                            {{ spec_goal|safe }}
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn-secondary" onclick="copySection('goal')">複製</button>
+                            <button class="btn-secondary" onclick="downloadSection('goal', '專案目標')">下載 MD</button>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">資料模型</h3>
+                            <span class="card-badge">Model</span>
+                        </div>
+                        <div class="card-content" id="section-model">
+                            {{ spec_model|safe }}
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn-secondary" onclick="copySection('model')">複製</button>
+                            <button class="btn-secondary" onclick="downloadSection('model', '資料模型')">下載 MD</button>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">功能規格</h3>
+                            <span class="card-badge">Features</span>
+                        </div>
+                        <div class="card-content" id="section-feature">
+                            {{ spec_feature|safe }}
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn-secondary" onclick="copySection('feature')">複製</button>
+                            <button class="btn-secondary" onclick="downloadSection('feature', '功能規格')">下載 MD</button>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">流程圖</h3>
+                            <span class="card-badge">Flow</span>
+                        </div>
+                        <div class="card-content" id="section-flow">
+                            {{ spec_flow|safe }}
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn-secondary" onclick="copySection('flow')">複製</button>
+                            <button class="btn-secondary" onclick="downloadMermaidCode()">下載 MMD</button>
+                            <button class="btn-secondary" onclick="downloadMermaidImage()">下載圖檔</button>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">API 規格</h3>
+                            <span class="card-badge">API</span>
+                        </div>
+                        <div class="card-content" id="section-api">
+                            {{ spec_api|safe }}
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn-secondary" onclick="copySection('api')">複製</button>
+                            <button class="btn-secondary" onclick="downloadSection('api', 'API規格')">下載 MD</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- 進階規格產出區 -->
+            <section id="section-advanced" class="content-section">
+                <div class="page-header">
+                    <h1 class="page-title">進階規格產出</h1>
+                    <p style="color: #666; margin-top: 0.5rem;">結構化三階段流程: Formulation → Discovery → Clarify</p>
+                </div>
+                
+                <!-- 階段導航 -->
+                <div style="display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap;">
+                    <button class="btn-secondary" onclick="showAdvancedPhase('formulation')" id="btn-phase-formulation" style="flex: 1; min-width: 150px;">
+                        Step 1: Formulation
+                    </button>
+                    <button class="btn-secondary" onclick="showAdvancedPhase('discovery')" id="btn-phase-discovery" style="flex: 1; min-width: 150px; opacity: 0.5;" disabled>
+                        Step 2: Discovery
+                    </button>
+                    <button class="btn-secondary" onclick="showAdvancedPhase('clarify')" id="btn-phase-clarify" style="flex: 1; min-width: 150px; opacity: 0.5;" disabled>
+                        Step 3: Clarify
+                    </button>
+                </div>
+                
+                <!-- Phase 1: Formulation -->
+                <div id="phase-formulation" class="advanced-phase" style="display: block;">
+                    <div class="form-card">
+                        <h2 style="margin-bottom: 1rem;">Formulation: 萃取規格模型</h2>
+                        <p style="color: #666; margin-bottom: 1.5rem;">
+                            從原始規格文本中萃取資料模型 (DBML) 和功能模型 (Gherkin)
+                        </p>
+                        
+                        <form id="formulation-form" onsubmit="return executeFormulation(event)">
+                            <label for="spec-text">輸入原始規格文本</label>
+                            <textarea 
+                                id="spec-text" 
+                                rows="12" 
+                                placeholder="例如: 
+我想做一個餐廳點餐系統...
+客人可以瀏覽菜單、將菜品加入訂單
+每道菜品都有名稱、價格、類別
+訂單必須記錄客人資訊、訂購時間、總額..."
+                                required
+                                style="font-family: 'Courier New', monospace; font-size: 0.95rem;"
+                            ></textarea>
+                            
+                            <button type="submit" style="margin-top: 1rem;">
+                                執行 Formulation
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <!-- Formulation 結果顯示區 -->
+                    <div id="formulation-results" style="display: none; margin-top: 2rem;">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">資料模型 (DBML)</h3>
+                                <span class="card-badge">Data Model</span>
+                            </div>
+                            <div class="card-content">
+                                <pre id="formulation-dbml" style="background: #f5f5f5; padding: 1rem; border-radius: 8px; overflow-x: auto;"></pre>
+                            </div>
+                            <div class="card-actions">
+                                <button class="btn-secondary" onclick="copyFormulationResult('dbml')">複製 DBML</button>
+                                <button class="btn-secondary" onclick="downloadFormulationResult('dbml', 'erm.dbml')">下載 DBML</button>
+                            </div>
+                        </div>
+                        
+                        <div class="card" style="margin-top: 1.5rem;">
+                            <div class="card-header">
+                                <h3 class="card-title">功能模型 (Gherkin)</h3>
+                                <span class="card-badge">Features</span>
+                            </div>
+                            <div class="card-content">
+                                <pre id="formulation-gherkin" style="background: #f5f5f5; padding: 1rem; border-radius: 8px; overflow-x: auto;"></pre>
+                            </div>
+                            <div class="card-actions">
+                                <button class="btn-secondary" onclick="copyFormulationResult('gherkin')">複製 Gherkin</button>
+                                <button class="btn-secondary" onclick="downloadFormulationResult('gherkin', 'features.feature')">下載 Feature</button>
+                            </div>
+                        </div>
+                        
+                        <button class="btn-primary" onclick="proceedToDiscovery()" style="width: 100%; margin-top: 1.5rem; padding: 1rem; font-size: 1.1rem;">
+                            繼續到 Discovery 階段
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Phase 2: Discovery -->
+                <div id="phase-discovery" class="advanced-phase" style="display: none;">
+                    <div class="form-card">
+                        <h2 style="margin-bottom: 1rem;">Discovery: 掃描歧義與遺漏</h2>
+                        <p style="color: #666; margin-bottom: 1.5rem;">
+                            使用檢查清單掃描規格,識別需要釐清的項目
+                        </p>
+                        
+                        <button class="btn-primary" onclick="executeDiscovery()" id="btn-execute-discovery" style="width: 100%; padding: 1rem; font-size: 1.1rem;">
+                            執行 Discovery 掃描
+                        </button>
+                    </div>
+                    
+                    <!-- Discovery 結果顯示區 -->
+                    <div id="discovery-results" style="display: none; margin-top: 2rem;">
+                        <!-- 統計卡片 -->
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                            <div class="card" style="text-align: center; padding: 1.5rem;">
+                                <div style="font-size: 2rem; font-weight: bold; color: var(--cr-main-1);" id="stat-total-issues">0</div>
+                                <div style="color: #666; margin-top: 0.5rem;">釐清項目總數</div>
+                            </div>
+                            <div class="card" style="text-align: center; padding: 1.5rem;">
+                                <div style="font-size: 2rem; font-weight: bold; color: #ff4444;" id="stat-high-priority">0</div>
+                                <div style="color: #666; margin-top: 0.5rem;">High 優先級</div>
+                            </div>
+                            <div class="card" style="text-align: center; padding: 1.5rem;">
+                                <div style="font-size: 2rem; font-weight: bold; color: #ff9944;" id="stat-medium-priority">0</div>
+                                <div style="color: #666; margin-top: 0.5rem;">Medium 優先級</div>
+                            </div>
+                            <div class="card" style="text-align: center; padding: 1.5rem;">
+                                <div style="font-size: 2rem; font-weight: bold; color: #44ff44;" id="stat-low-priority">0</div>
+                                <div style="color: #666; margin-top: 0.5rem;">Low 優先級</div>
+                            </div>
+                        </div>
+                        
+                        <!-- 釐清項目清單 -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">釐清項目清單</h3>
+                                <span class="card-badge">Issues</span>
+                            </div>
+                            <div class="card-content">
+                                <div id="clarification-items"></div>
+                            </div>
+                        </div>
+                        
+                        <button class="btn-primary" onclick="proceedToClarify()" style="width: 100%; margin-top: 1.5rem; padding: 1rem; font-size: 1.1rem;">
+                            開始 Clarify 互動釐清
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Phase 3: Clarify -->
+                <div id="phase-clarify" class="advanced-phase" style="display: none;">
+                    <div class="form-card">
+                        <h2 style="margin-bottom: 1rem;">Clarify: 互動式釐清</h2>
+                        <p style="color: #666; margin-bottom: 1.5rem;">
+                            一次一題,逐步釐清規格中的歧義
+                        </p>
+                        
+                        <!-- 進度指示 -->
+                        <div style="background: #f5f5f5; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                <span style="font-weight: 600;">釐清進度</span>
+                                <span id="clarify-progress-text">0 / 0</span>
+                            </div>
+                            <div style="background: #e0e0e0; height: 8px; border-radius: 4px; overflow: hidden;">
+                                <div id="clarify-progress-bar" style="background: linear-gradient(135deg, var(--cr-main-1), var(--cr-main-2)); height: 100%; width: 0%; transition: width 0.3s;"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- 當前問題卡片 -->
+                        <div id="current-question-card" style="display: none;">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title" id="question-title">問題標題</h3>
+                                    <span class="card-badge" id="question-priority">High</span>
+                                </div>
+                                <div class="card-content">
+                                    <div style="margin-bottom: 1rem;">
+                                        <strong>定位:</strong>
+                                        <p id="question-location" style="color: #666; margin-top: 0.5rem;"></p>
+                                    </div>
+                                    
+                                    <div style="margin-bottom: 1rem;">
+                                        <strong>問題:</strong>
+                                        <p id="question-text" style="margin-top: 0.5rem; font-size: 1.1rem;"></p>
+                                    </div>
+                                    
+                                    <div>
+                                        <strong>選項:</strong>
+                                        <div id="question-options" style="margin-top: 0.75rem;"></div>
+                                    </div>
+                                </div>
+                                <div class="card-actions">
+                                    <button class="btn-secondary" onclick="skipQuestion()">跳過此題</button>
+                                    <button class="btn-primary" onclick="submitAnswer()" id="btn-submit-answer">提交答案</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 完成訊息與最終規格預覽 -->
+                        <div id="clarify-complete-message" style="display: none;">
+                            <div class="card" style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(245, 158, 11, 0.1)); border: 2px solid var(--cr-main-1);">
+                                <div class="card-content" style="text-align: center; padding: 2rem;">
+                                    <h2 style="margin-bottom: 1rem;">釐清流程完成!</h2>
+                                    <p style="color: #666; margin-bottom: 1.5rem;">已完成所有釐清項目,規格已即時更新</p>
+                                    <button class="btn-primary" onclick="generateCompleteResult()" style="font-size: 1.1rem; padding: 1rem 2rem;">
+                                        生成完整規格結果頁面
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- 最終規格預覽 -->
+                            <div class="card" style="margin-top: 1.5rem;">
+                                <div class="card-header">
+                                    <h3 class="card-title">最終規格預覽</h3>
+                                    <span class="card-badge">Final Spec</span>
+                                </div>
+                                <div class="card-content">
+                                    <h4 style="margin-bottom: 0.75rem;">資料模型 (DBML)</h4>
+                                    <pre id="final-dbml-preview" style="background: #f5f5f5; padding: 1rem; border-radius: 8px; overflow-x: auto; max-height: 400px; overflow-y: auto;"></pre>
+                                    
+                                    <h4 style="margin: 1.5rem 0 0.75rem 0;">功能模型 (Gherkin)</h4>
+                                    <pre id="final-gherkin-preview" style="background: #f5f5f5; padding: 1rem; border-radius: 8px; overflow-x: auto; max-height: 400px; overflow-y: auto;"></pre>
+                                </div>
+                                <div class="card-actions">
+                                    <button class="btn-secondary" onclick="copyFinalSpec()">複製全部</button>
+                                    <button class="btn-primary" onclick="downloadFinalSpec()" style="padding: 0.75rem 1.5rem;">
+                                        下載最終規格檔案
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- 權重配置區 -->
+            <section id="section-weight" class="content-section">
+                <div class="page-header">
+                    <h1 class="page-title">權重配置</h1>
+                </div>
+                
+                <!-- 說明區塊 -->
+                <div style="margin-bottom: 2.5rem;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.5rem;">
+                        <span style="font-size: 2rem;">ℹ️</span>
+                        <h3 style="margin: 0; color: #1e293b; font-size: 1.3rem; font-weight: 600;">權重配置說明</h3>
+                    </div>
+                    
+                    <p style="margin: 0 0 1.5rem 0; color: #334155; line-height: 1.8; font-size: 1rem;">
+                        權重配置用於計算 Ticket 的優先級分數，四個權重的總和必須等於 <strong style="color: #8b5cf6;">1.0</strong>
+                    </p>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
+                        <div style="background: #23272f; box-shadow: 0 2px 12px 0 rgba(0,0,0,0.10); border-radius: 12px; padding: 1.25rem;">
+                            <div style="display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                <span style="color: #e74c3c; font-size: 1.8rem; font-weight: bold; line-height: 1;">A</span>
+                                <span style="font-weight: 600; color: #fff; font-size: 1.1rem;">影響範圍</span>
+                            </div>
+                            <p style="margin: 0; color: #cbd5e1; font-size: 0.95rem; line-height: 1.6; padding-left: 2rem;">
+                                影響多少用戶或系統
+                            </p>
+                        </div>
+                        <div style="background: #23272f; box-shadow: 0 2px 12px 0 rgba(0,0,0,0.10); border-radius: 12px; padding: 1.25rem;">
+                            <div style="display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                <span style="color: #f39c12; font-size: 1.8rem; font-weight: bold; line-height: 1;">B</span>
+                                <span style="font-weight: 600; color: #fff; font-size: 1.1rem;">緊急程度</span>
+                            </div>
+                            <p style="margin: 0; color: #cbd5e1; font-size: 0.95rem; line-height: 1.6; padding-left: 2rem;">
+                                多快需要處理
+                            </p>
+                        </div>
+                        <div style="background: #23272f; box-shadow: 0 2px 12px 0 rgba(0,0,0,0.10); border-radius: 12px; padding: 1.25rem;">
+                            <div style="display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                <span style="color: #27ae60; font-size: 1.8rem; font-weight: bold; line-height: 1;">C</span>
+                                <span style="font-weight: 600; color: #fff; font-size: 1.1rem;">技術複雜度</span>
+                            </div>
+                            <p style="margin: 0; color: #cbd5e1; font-size: 0.95rem; line-height: 1.6; padding-left: 2rem;">
+                                實作的難易度
+                            </p>
+                        </div>
+                        <div style="background: #23272f; box-shadow: 0 2px 12px 0 rgba(0,0,0,0.10); border-radius: 12px; padding: 1.25rem;">
+                            <div style="display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                <span style="color: #3498db; font-size: 1.8rem; font-weight: bold; line-height: 1;">D</span>
+                                <span style="font-weight: 600; color: #fff; font-size: 1.1rem;">商業價值</span>
+                            </div>
+                            <p style="margin: 0; color: #cbd5e1; font-size: 0.95rem; line-height: 1.6; padding-left: 2rem;">
+                                對業務的貢獻
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; align-items: start; gap: 0.75rem; padding-top: 1rem; border-top: 1px dashed #cbd5e1;">
+                        <span style="font-size: 1.5rem;">💡</span>
+                        <p style="margin: 0; color: #64748b; font-size: 0.95rem; line-height: 1.7;">
+                            <strong style="color: #8b5cf6;">使用提示：</strong>調整權重可以根據團隊的優先級策略，例如重視緊急性可提高 <strong style="color: #f39c12;">B 權重</strong>，重視商業價值可提高 <strong style="color: #3498db;">D 權重</strong>。
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="form-card">
+                    <form id="weight-config-form" onsubmit="return submitWeightConfig(event)">
+                        <label for="weight-name">配置名稱</label>
+                        <input type="text" id="weight-name" required>
+                        
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                            <div>
+                                <label for="score-a">A 權重</label>
+                                <input type="number" id="score-a" min="0" max="1" step="0.01" value="0.25" required>
+                            </div>
+                            <div>
+                                <label for="score-b">B 權重</label>
+                                <input type="number" id="score-b" min="0" max="1" step="0.01" value="0.25" required>
+                            </div>
+                            <div>
+                                <label for="score-c">C 權重</label>
+                                <input type="number" id="score-c" min="0" max="1" step="0.01" value="0.25" required>
+                            </div>
+                            <div>
+                                <label for="score-d">D 權重</label>
+                                <input type="number" id="score-d" min="0" max="1" step="0.01" value="0.25" required>
+                            </div>
+                        </div>
+                        
+                        <div id="weight-error" class="error-message" style="display:none;"></div>
+                        <button type="submit" style="margin-top: 1.5rem;">儲存權重配置</button>
+                    </form>
+                </div>
+                
+                <div id="weight-config-list"></div>
+            </section>
+        </main>
+    </div>
+    
+    <script>
+        // 背景動畫
+        const MIN_SPEED = 0.5;
+        const MAX_SPEED = 2;
+        
+        function randomNumber(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+        
+        class AnimatedBlob {
+            constructor(el) {
+                this.el = el;
+                const boundingRect = this.el.getBoundingClientRect();
+                this.size = boundingRect.width;
+                this.initialX = randomNumber(0, window.innerWidth - this.size);
+                this.initialY = randomNumber(0, window.innerHeight - this.size);
+                this.el.style.top = `${this.initialY}px`;
+                this.el.style.left = `${this.initialX}px`;
+                this.vx = randomNumber(MIN_SPEED, MAX_SPEED) * (Math.random() > 0.5 ? 1 : -1);
+                this.vy = randomNumber(MIN_SPEED, MAX_SPEED) * (Math.random() > 0.5 ? 1 : -1);
+                this.x = this.initialX;
+                this.y = this.initialY;
+            }
+            
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                if (this.x >= window.innerWidth - this.size) {
+                    this.x = window.innerWidth - this.size;
+                    this.vx *= -1;
+                }
+                if (this.y >= window.innerHeight - this.size) {
+                    this.y = window.innerHeight - this.size;
+                    this.vy *= -1;
+                }
+                if (this.x <= 0) {
+                    this.x = 0;
+                    this.vx *= -1;
+                }
+                if (this.y <= 0) {
+                    this.y = 0;
+                    this.vy *= -1;
+                }
+                this.el.style.transform = `translate(${this.x - this.initialX}px, ${this.y - this.initialY}px)`;
+            }
+        }
+        
+        function initBlobs() {
+            const blobEls = document.querySelectorAll('.blob');
+            const blobs = Array.from(blobEls).map((blobEl) => new AnimatedBlob(blobEl));
+            function update() {
+                requestAnimationFrame(update);
+                blobs.forEach((blob) => blob.update());
+            }
+            requestAnimationFrame(update);
+        }
+        
+        initBlobs();
+        
+        // 切換區塊
+        function switchSection(section) {
+            // 隱藏所有區塊
+            document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            
+            // 顯示選中的區塊
+            const targetSection = document.getElementById(`section-${section}`);
+            if (targetSection) {
+                targetSection.classList.add('active');
+            }
+            
+            // 高亮對應的導航項
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => {
+                if (item.getAttribute('onclick') && item.getAttribute('onclick').includes(section)) {
+                    item.classList.add('active');
+                }
+            });
+        }
+        
+        // 規格表單提交後自動切換到結果區
+        {% if spec_background or spec_goal or spec_model or spec_feature or spec_flow or spec_api %}
+        document.addEventListener('DOMContentLoaded', function() {
+            // 如果有生成結果，自動切換到結果區
+            switchSection('results');
+        });
+        {% endif %}
+        
+        // AI 想法衍生
+        async function submitIdea(e) {
+            e.preventDefault();
+            const idea = document.getElementById('idea-input').value.trim();
+            const errorDiv = document.getElementById('llm-idea-error');
+            const resultDiv = document.getElementById('llm-idea-result-cards');
+            
+            if (!idea) {
+                errorDiv.textContent = '請輸入想法';
+                errorDiv.style.display = 'block';
+                return false;
+            }
+            
+            errorDiv.style.display = 'none';
+            resultDiv.innerHTML = '<div class="card"><div class="card-content">🤔 AI 正在思考中...</div></div>';
+            
+            // 顯示 loading
+            showLoading();
+            
+            try {
+                const resp = await fetch('/polls/llm-ideas/', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ idea })
+                });
+                const result = await resp.json();
+                
+                // 隱藏 loading
+                hideLoading();
+                
+                if (result.error) {
+                    errorDiv.textContent = result.error;
+                    errorDiv.style.display = 'block';
+                    resultDiv.innerHTML = '';
+                } else if (result.ideas && Array.isArray(result.ideas)) {
+                    let html = '<div class="cards-grid">';
+                    result.ideas.forEach((item, index) => {
+                        // 使用 data attribute 存儲文字，避免 onclick 內聯事件問題
+                        const cardId = `idea-card-${index}`;
+                        html += `
+                            <div class="card" id="${cardId}" data-idea-text="${escapeHtml(item)}">
+                                <div class="card-header">
+                                    <h3 class="card-title">想法 ${index + 1}</h3>
+                                    <span class="card-badge">AI Generated</span>
+                                </div>
+                                <div class="card-content">${item}</div>
+                                <div class="card-actions">
+                                    <button class="btn-secondary" onclick="copyIdeaText('${cardId}')">📋 複製</button>
+                                    <button onclick="selectIdeaAndProceed('${cardId}')">選擇此想法</button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                    resultDiv.innerHTML = html;
+                } else {
+                    resultDiv.innerHTML = '<div class="card"><div class="card-content">AI 沒有產生想法，請再試一次。</div></div>';
+                }
+            } catch (err) {
+                // 隱藏 loading
+                hideLoading();
+                errorDiv.textContent = 'AI 服務錯誤，請稍後再試';
+                errorDiv.style.display = 'block';
+                resultDiv.innerHTML = '';
+            }
+            return false;
+        }
+        
+        // 複製想法文字（使用 data attribute 避免轉義問題）
+        function copyIdeaText(cardId) {
+            const card = document.getElementById(cardId);
+            if (card) {
+                const text = card.getAttribute('data-idea-text');
+                if (text) {
+                    navigator.clipboard.writeText(text).then(() => {
+                        alert('已複製到剪貼簿！');
+                    }).catch(err => {
+                        console.error('複製失敗:', err);
+                        alert('複製失敗，請手動選取文字複製');
+                    });
+                }
+            }
+        }
+        
+        // HTML 轉義函數
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // 全局變量存儲選中的想法
+        let selectedIdea = '';
+        
+        // 選擇想法並跳轉到規格生成器
+        function selectIdeaAndProceed(cardId) {
+            const card = document.getElementById(cardId);
+            if (card) {
+                selectedIdea = card.getAttribute('data-idea-text');
+                
+                // 切換到規格生成器頁面（不要加 section- 前綴，switchSection 會自動加）
+                switchSection('generator');
+                
+                // 顯示選中的想法
+                const displayDiv = document.getElementById('selected-idea-display');
+                const textDiv = document.getElementById('selected-idea-text');
+                if (displayDiv && textDiv) {
+                    textDiv.textContent = selectedIdea;
+                    displayDiv.style.display = 'block';
+                }
+                
+                // 提示用戶
+                alert('想法已選擇！點擊各欄位旁的「AI 生成」按鈕來自動填充內容。');
+            }
+        }
+        
+        // 為單個欄位生成內容
+        // 異步生成單一欄位（可並行）
+        async function generateFieldAsync(fieldName) {
+            if (!selectedIdea) {
+                alert('請先在「AI 想法衍生」頁面選擇一個想法！');
+                switchSection('idea');
+                return;
+            }
+            
+            const textarea = document.getElementById(fieldName);
+            const button = document.getElementById(`btn-${fieldName}`);
+            if (!textarea || !button) return;
+            
+            // 更新按鈕狀態
+            button.disabled = true;
+            button.querySelector('.btn-text').style.display = 'none';
+            button.querySelector('.btn-loading').style.display = 'inline';
+            
+            // 根據欄位類型準備不同的 prompt
+            const prompts = {
+                'project_goal': `你是一個專案規劃專家。根據以下想法，生成簡潔的專案目標（1-3 句話，不超過 200 字）。
+
+想法：${selectedIdea}
+
+要求：
+- 只輸出目標內容本身
+- 不要包含「專案目標」、「目標」等標題
+- 不要包含任何說明文字或前綴
+- 直接開始描述目標`,
+
+                'core_features': `你是一個產品經理。根據以下想法，列出核心功能（3-5 項，每項簡短描述，總共不超過 300 字）。
+
+想法：${selectedIdea}
+
+要求：
+- 使用條列式，每項開頭用「-」或數字編號
+- 只輸出功能列表
+- 不要包含「核心功能」等標題
+- 不要包含任何說明文字`,
+
+                'technical_constraints': `你是一個技術架構師。根據以下想法，建議合適的技術選擇（程式語言、框架、平台等，不超過 200 字）。
+
+想法：${selectedIdea}
+
+要求：
+- 直接列出技術選擇和理由
+- 不要包含「技術限制」、「建議」等標題
+- 不要包含字數限制說明
+- 不要用粗體或特殊格式
+- 簡潔明確`,
+
+                'target_audience': `你是一個用戶研究專家。根據以下想法，描述目標使用者（說明使用者特徵、需求，不超過 150 字）。
+
+想法：${selectedIdea}
+
+要求：
+- 直接描述目標使用者
+- 不要包含「目標使用者」等標題
+- 不要包含任何說明文字或前綴`
+            };
+            
+            try {
+                const response = await fetch('/polls/generate-field/', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        field: fieldName,
+                        idea: selectedIdea,
+                        prompt: prompts[fieldName]
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success && result.content) {
+                    textarea.value = result.content;
+                    // 添加成功動畫
+                    textarea.style.background = 'rgba(46, 204, 113, 0.1)';
+                    setTimeout(() => {
+                        textarea.style.background = '';
+                    }, 1000);
+                } else {
+                    alert('生成失敗：' + (result.error || '未知錯誤'));
+                }
+            } catch (err) {
+                alert('AI 服務錯誤，請稍後再試');
+                console.error(err);
+            } finally {
+                // 恢復按鈕狀態
+                button.disabled = false;
+                button.querySelector('.btn-text').style.display = 'inline';
+                button.querySelector('.btn-loading').style.display = 'none';
+            }
+        }
+        
+        // 一鍵生成所有欄位（並行執行）
+        async function generateAllFieldsAsync() {
+            if (!selectedIdea) {
+                alert('請先在「AI 想法衍生」頁面選擇一個想法！');
+                switchSection('idea');
+                return;
+            }
+            
+            const fields = ['project_goal', 'core_features', 'technical_constraints', 'target_audience'];
+            
+            // 顯示全局 loading
+            showLoading('正在並行生成所有欄位...');
+            
+            try {
+                // 並行執行所有生成任務
+                await Promise.all(fields.map(field => generateFieldAsync(field)));
+                hideLoading();
+                alert('所有欄位生成完成！');
+            } catch (err) {
+                hideLoading();
+                alert('部分欄位生成失敗，請檢查結果');
+                console.error(err);
+            }
+        }
+        
+        // 保留原有的 generateField 函數（向後兼容）
+        async function generateField(fieldName) {
+            if (!selectedIdea) {
+                alert('請先在「AI 想法衍生」頁面選擇一個想法！');
+                switchSection('idea');
+                return;
+            }
+            
+            const textarea = document.getElementById(fieldName);
+            if (!textarea) return;
+            
+            // 顯示 loading
+            showLoading();
+            
+            // 根據欄位類型準備不同的 prompt
+            const prompts = {
+                'project_goal': `你是一個專案規劃專家。根據以下想法，生成簡潔的專案目標（1-3 句話，不超過 200 字）。
+
+想法：${selectedIdea}
+
+要求：
+- 只輸出目標內容本身
+- 不要包含「專案目標」、「目標」等標題
+- 不要包含任何說明文字或前綴
+- 直接開始描述目標`,
+
+                'core_features': `你是一個產品經理。根據以下想法，列出核心功能（3-5 項，每項簡短描述，總共不超過 300 字）。
+
+想法：${selectedIdea}
+
+要求：
+- 使用條列式，每項開頭用「-」或數字編號
+- 只輸出功能列表
+- 不要包含「核心功能」等標題
+- 不要包含任何說明文字`,
+
+                'technical_constraints': `你是一個技術架構師。根據以下想法，建議合適的技術選擇（程式語言、框架、平台等，不超過 200 字）。
+
+想法：${selectedIdea}
+
+要求：
+- 直接列出技術選擇和理由
+- 不要包含「技術限制」、「建議」等標題
+- 不要包含字數限制說明
+- 不要用粗體或特殊格式
+- 簡潔明確`,
+
+                'target_audience': `你是一個用戶研究專家。根據以下想法，描述目標使用者（說明使用者特徵、需求，不超過 150 字）。
+
+想法：${selectedIdea}
+
+要求：
+- 直接描述目標使用者
+- 不要包含「目標使用者」等標題
+- 不要包含任何說明文字或前綴`
+            };
+            
+            try {
+                const response = await fetch('/polls/generate-field/', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        field: fieldName,
+                        idea: selectedIdea,
+                        prompt: prompts[fieldName]
+                    })
+                });
+                
+                const result = await response.json();
+                hideLoading();
+                
+                if (result.success && result.content) {
+                    textarea.value = result.content;
+                } else {
+                    alert('生成失敗：' + (result.error || '未知錯誤'));
+                }
+            } catch (err) {
+                hideLoading();
+                alert('AI 服務錯誤，請稍後再試');
+                console.error(err);
+            }
+        }
+        
+        // 權重配置
+        async function submitWeightConfig(e) {
+            e.preventDefault();
+            const data = {
+                name: document.getElementById('weight-name').value,
+                score_a: parseFloat(document.getElementById('score-a').value),
+                score_b: parseFloat(document.getElementById('score-b').value),
+                score_c: parseFloat(document.getElementById('score-c').value),
+                score_d: parseFloat(document.getElementById('score-d').value),
+            };
+            
+            const errorDiv = document.getElementById('weight-error');
+            
+            if (Math.abs(data.score_a + data.score_b + data.score_c + data.score_d - 1.0) > 1e-6) {
+                errorDiv.textContent = '分數總和必須等於 1.0';
+                errorDiv.style.display = 'block';
+                return false;
+            }
+            
+            try {
+                const resp = await fetch('/polls/weight-config/', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                const result = await resp.json();
+                
+                if (result.error) {
+                    errorDiv.textContent = result.error;
+                    errorDiv.style.display = 'block';
+                } else {
+                    errorDiv.style.display = 'none';
+                    loadWeightConfigs();
+                }
+            } catch (err) {
+                errorDiv.textContent = '儲存失敗，請稍後再試';
+                errorDiv.style.display = 'block';
+            }
+            return false;
+        }
+        
+        async function loadWeightConfigs() {
+            const resp = await fetch('/polls/weight-config/');
+            const result = await resp.json();
+            let html = '<div class="cards-grid">';
+            for (const c of result.configs) {
+                html += `
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">${c.name}</h3>
+                        </div>
+                        <div class="card-content">
+                            A: ${c.score_a} | B: ${c.score_b}<br>
+                            C: ${c.score_c} | D: ${c.score_d}
+                        </div>
+                    </div>
+                `;
+            }
+            html += '</div>';
+            document.getElementById('weight-config-list').innerHTML = html;
+        }
+        
+        // 工具函數
+        function copySection(section) {
+            const text = document.getElementById('section-' + section).innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                alert('已複製到剪貼簿！');
+            });
+        }
+        
+        function downloadSection(section) {
+            const text = document.getElementById('section-' + section).innerText;
+            const blob = new Blob([text], {type: 'text/plain;charset=utf-8'});
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `${section}.txt`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        function copyText(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('已複製到剪貼簿！');
+            });
+        }
+        
+        // 顯示/隱藏 Loading
+        function showLoading() {
+            document.getElementById('loading-overlay').classList.add('show');
+        }
+        
+        function hideLoading() {
+            document.getElementById('loading-overlay').classList.remove('show');
+        }
+        
+        // 複製章節內容
+        function copySection(sectionId) {
+            const element = document.getElementById('section-' + sectionId);
+            if (element) {
+                const text = element.innerText || element.textContent;
+                copyText(text);
+            }
+        }
+        
+        // 下載章節為 MD 檔案
+        function downloadSection(sectionId, title) {
+            const element = document.getElementById('section-' + sectionId);
+            if (!element) return;
+            
+            let content = element.innerText || element.textContent;
+            
+            // 添加標題
+            const mdContent = `# ${title}\n\n${content}`;
+            
+            // 創建並下載檔案
+            const blob = new Blob([mdContent], { type: 'text/markdown;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${title}.md`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+        
+        // 下載 Mermaid 代碼為 .mmd 檔案
+        function downloadMermaidCode() {
+            const flowSection = document.getElementById('section-flow');
+            if (!flowSection) return;
+            
+            // 從原始內容或渲染後的 details 中提取 mermaid 代碼
+            const codeElement = flowSection.querySelector('details code');
+            let mermaidCode = '';
+            
+            if (codeElement) {
+                mermaidCode = codeElement.textContent;
+            } else {
+                // 嘗試從原始內容提取
+                const content = flowSection.textContent || flowSection.innerText;
+                const match = content.match(/```mermaid\s*([\s\S]*?)```/i) || 
+                              content.match(/```\s*((?:graph|flowchart)[\s\S]*?)```/i) ||
+                              content.match(/((?:graph|flowchart)\s+(?:TD|LR|TB|RL|BT)[\s\S]*?)(?=\n\n|$)/i);
+                if (match) {
+                    mermaidCode = match[1].trim();
+                }
+            }
+            
+            if (!mermaidCode) {
+                alert('找不到 Mermaid 代碼');
+                return;
+            }
+            
+            const blob = new Blob([mermaidCode], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = '流程圖.mmd';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+        
+        // 下載 Mermaid 圖表為圖片
+        function downloadMermaidImage() {
+            const mermaidDiv = document.querySelector('#section-flow .mermaid');
+            if (!mermaidDiv) {
+                alert('請先生成流程圖');
+                return;
+            }
+            
+            // 獲取 SVG 元素
+            const svg = mermaidDiv.querySelector('svg');
+            if (!svg) {
+                alert('找不到流程圖 SVG');
+                return;
+            }
+            
+            // 克隆 SVG 並設置樣式
+            const svgClone = svg.cloneNode(true);
+            svgClone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+            
+            // 序列化 SVG
+            const svgData = new XMLSerializer().serializeToString(svgClone);
+            const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+            const url = URL.createObjectURL(svgBlob);
+            
+            // 下載 SVG
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = '流程圖.svg';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+        
+        // 提取並渲染 Mermaid 圖表
+        function renderMermaidDiagrams() {
+            const flowSection = document.getElementById('section-flow');
+            if (!flowSection) {
+                console.log('Flow section not found');
+                return;
+            }
+            
+            // 獲取原始 HTML 內容
+            let content = flowSection.innerHTML;
+            console.log('Original content:', content);
+            
+            // 清理可能的 HTML 實體
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = content;
+            content = tempDiv.textContent || tempDiv.innerText;
+            
+            // 多種提取模式
+            let mermaidCode = null;
+            
+            // 模式 1: 標準 ```mermaid ... ```
+            let match = content.match(/```mermaid\s*([\s\S]*?)```/i);
+            if (match && match[1]) {
+                mermaidCode = match[1].trim();
+                console.log('Found mermaid with pattern 1');
+            }
+            
+            // 模式 2: 只有 ``` 包裹且內容包含 graph/flowchart
+            if (!mermaidCode) {
+                match = content.match(/```\s*((?:graph|flowchart|sequenceDiagram)[\s\S]*?)```/i);
+                if (match && match[1]) {
+                    mermaidCode = match[1].trim();
+                    console.log('Found mermaid with pattern 2');
+                }
+            }
+            
+            // 模式 3: 直接的 graph TD/LR 或 flowchart 語法（無代碼塊）
+            if (!mermaidCode) {
+                match = content.match(/((?:graph|flowchart)\s+(?:TD|LR|TB|RL|BT)[\s\S]*?)(?=\n\n|$)/i);
+                if (match && match[1]) {
+                    mermaidCode = match[1].trim();
+                    console.log('Found mermaid with pattern 3');
+                }
+            }
+            
+            if (mermaidCode) {
+                console.log('Mermaid code found:', mermaidCode.substring(0, 100));
+                
+                // 創建 Mermaid 容器
+                flowSection.innerHTML = `
+                    <div class="mermaid-container" style="background: white; padding: 2rem; border-radius: 8px; margin-bottom: 1rem;">
+                        <div class="mermaid">${mermaidCode}</div>
+                    </div>
+                    <details style="margin-top: 1rem;">
+                        <summary style="cursor: pointer; color: #666; font-size: 0.9rem;">查看原始代碼</summary>
+                        <pre style="background: #f5f5f5; padding: 1rem; border-radius: 8px; overflow-x: auto; margin-top: 0.5rem; font-size: 0.85rem; line-height: 1.4;"><code>${mermaidCode}</code></pre>
+                    </details>
+                `;
+                
+                // 初始化並渲染 Mermaid
+                if (typeof mermaid !== 'undefined') {
+                    try {
+                        mermaid.initialize({ 
+                            startOnLoad: false,
+                            theme: 'default',
+                            themeVariables: {
+                                primaryColor: '#2ac9de',
+                                primaryTextColor: '#333',
+                                primaryBorderColor: '#2ac9de',
+                                lineColor: '#999',
+                                secondaryColor: '#f087f4',
+                                tertiaryColor: '#fff'
+                            },
+                            flowchart: {
+                                useMaxWidth: true,
+                                htmlLabels: true,
+                                curve: 'basis'
+                            }
+                        });
+                        mermaid.run();
+                        console.log('Mermaid rendered successfully');
+                    } catch (error) {
+                        console.error('Mermaid render error:', error);
+                        flowSection.innerHTML = '<p style="color: #e74c3c;">流程圖渲染失敗：' + error.message + '</p><pre>' + mermaidCode + '</pre>';
+                    }
+                } else {
+                    console.error('Mermaid library not loaded');
+                }
+            } else {
+                console.log('No mermaid code found in content');
+            }
+        }
+        
+        // 初始化
+        window.onload = function() {
+            loadWeightConfigs();
+            // 延遲渲染以確保 DOM 完全載入
+            setTimeout(renderMermaidDiagrams, 100);
+            // 頁面載入完成後隱藏 Loading
+            hideLoading();
+        };
+        
+        // 如果是表單提交後回來的，確保隱藏 Loading
+        document.addEventListener('DOMContentLoaded', function() {
+            hideLoading();
+        });
+        
+        // ============================================
+        // 進階規格產出 JavaScript 函數
+        // ============================================
+        
+        // 全局變數儲存 Formulation 結果
+        let currentDBML = '';
+        let currentGherkin = '';
+        let clarificationItems = [];
+        let currentQuestionIndex = 0;
+        let selectedAnswer = '';
+        
+        // 切換進階階段頁面
+        function showAdvancedPhase(phase) {
+            // 隱藏所有 phase
+            document.querySelectorAll('.advanced-phase').forEach(el => {
+                el.style.display = 'none';
+            });
+            
+            // 顯示指定 phase
+            document.getElementById('phase-' + phase).style.display = 'block';
+            
+            // 更新按鈕樣式
+            document.querySelectorAll('[id^="btn-phase-"]').forEach(btn => {
+                btn.style.opacity = '0.5';
+                btn.style.background = '';
+            });
+            
+            const activeBtn = document.getElementById('btn-phase-' + phase);
+            activeBtn.style.opacity = '1';
+            activeBtn.style.background = 'linear-gradient(135deg, var(--cr-main-1), var(--cr-main-2))';
+        }
+        
+        // 執行 Formulation
+        function executeFormulation(event) {
+            event.preventDefault();
+            
+            const specText = document.getElementById('spec-text').value.trim();
+            if (!specText) {
+                alert('請輸入規格文本');
+                return false;
+            }
+            
+            showLoading('正在執行 Formulation 萃取...');
+            
+            fetch('/polls/formulation/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    spec_text: specText
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                
+                if (data.success) {
+                    // 儲存結果
+                    currentDBML = data.dbml;
+                    currentGherkin = data.gherkin;
+                    
+                    // 顯示結果
+                    document.getElementById('formulation-dbml').textContent = currentDBML;
+                    document.getElementById('formulation-gherkin').textContent = currentGherkin;
+                    document.getElementById('formulation-results').style.display = 'block';
+                    
+                    // 啟用 Discovery 按鈕
+                    const discoveryBtn = document.getElementById('btn-phase-discovery');
+                    discoveryBtn.disabled = false;
+                    discoveryBtn.style.opacity = '1';
+                    
+                    alert('Formulation 完成！已萃取資料模型和功能模型');
+                } else {
+                    alert('Formulation 失敗：' + data.error);
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                alert('執行錯誤：' + error.message);
+                console.error('Error:', error);
+            });
+            
+            return false;
+        }
+        
+        // 複製 Formulation 結果
+        function copyFormulationResult(type) {
+            const text = type === 'dbml' ? currentDBML : currentGherkin;
+            navigator.clipboard.writeText(text).then(() => {
+                alert('已複製到剪貼簿');
+            }).catch(err => {
+                console.error('複製失敗:', err);
+                alert('複製失敗');
+            });
+        }
+        
+        // 下載 Formulation 結果
+        function downloadFormulationResult(type, filename) {
+            const text = type === 'dbml' ? currentDBML : currentGherkin;
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        // 繼續到 Discovery
+        function proceedToDiscovery() {
+            showAdvancedPhase('discovery');
+        }
+        
+        // 執行 Discovery
+        function executeDiscovery() {
+            if (!currentDBML || !currentGherkin) {
+                alert('請先執行 Formulation');
+                return;
+            }
+            
+            showLoading('正在執行 Discovery 掃描...');
+            
+            fetch('/polls/discovery/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    dbml: currentDBML,
+                    gherkin: currentGherkin
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                
+                if (data.success) {
+                    clarificationItems = data.items;
+                    const stats = data.statistics;
+                    
+                    // 更新統計
+                    document.getElementById('stat-total-issues').textContent = stats.total;
+                    document.getElementById('stat-high-priority').textContent = stats.high;
+                    document.getElementById('stat-medium-priority').textContent = stats.medium;
+                    document.getElementById('stat-low-priority').textContent = stats.low;
+                    
+                    // 顯示釐清項目清單
+                    if (clarificationItems.length === 0) {
+                        document.getElementById('clarification-items').innerHTML = 
+                            '<p style="color: #28a745; text-align: center; padding: 2rem;">規格品質良好，無需釐清項目！</p>';
+                    } else {
+                        const itemsHtml = clarificationItems.map(item => `
+                            <div style="border-left: 4px solid ${item.priority === 'High' ? '#ff4444' : item.priority === 'Medium' ? '#ff9944' : '#44ff44'}; 
+                                        padding: 1rem; margin-bottom: 1rem; background: #f9f9f9; border-radius: 4px;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                    <strong>${item.location}</strong>
+                                    <span style="background: ${item.priority === 'High' ? '#ff4444' : item.priority === 'Medium' ? '#ff9944' : '#44ff44'}; 
+                                                 color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.85rem;">
+                                        ${item.priority}
+                                    </span>
+                                </div>
+                                <p style="color: #666; margin-top: 0.5rem;">${item.question}</p>
+                            </div>
+                        `).join('');
+                        
+                        document.getElementById('clarification-items').innerHTML = itemsHtml;
+                    }
+                    
+                    document.getElementById('discovery-results').style.display = 'block';
+                    
+                    // 啟用 Clarify 按鈕
+                    const clarifyBtn = document.getElementById('btn-phase-clarify');
+                    clarifyBtn.disabled = false;
+                    clarifyBtn.style.opacity = '1';
+                    
+                    alert('Discovery 完成！已識別 ' + clarificationItems.length + ' 個釐清項目');
+                } else {
+                    alert('Discovery 失敗：' + data.error);
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                alert('執行錯誤：' + error.message);
+                console.error('Error:', error);
+            });
+        }
+        
+        // 繼續到 Clarify
+        function proceedToClarify() {
+            showAdvancedPhase('clarify');
+            startClarify();
+        }
+        
+        // 開始 Clarify 流程
+        function startClarify() {
+            currentQuestionIndex = 0;
+            showNextQuestion();
+        }
+        
+        // 顯示下一題
+        function showNextQuestion() {
+            if (currentQuestionIndex >= clarificationItems.length) {
+                // 完成所有釐清 - 顯示最終規格預覽
+                document.getElementById('current-question-card').style.display = 'none';
+                document.getElementById('clarify-complete-message').style.display = 'block';
+                
+                // 更新最終規格預覽
+                document.getElementById('final-dbml-preview').textContent = currentDBML;
+                document.getElementById('final-gherkin-preview').textContent = currentGherkin;
+                
+                updateClarifyProgress();
+                return;
+            }
+            
+            const item = clarificationItems[currentQuestionIndex];
+            
+            // 更新進度
+            updateClarifyProgress();
+            
+            // 顯示問題卡片
+            document.getElementById('question-title').textContent = `問題 ${currentQuestionIndex + 1}`;
+            document.getElementById('question-priority').textContent = item.priority;
+            document.getElementById('question-priority').style.background = 
+                item.priority === 'High' ? '#ff4444' : item.priority === 'Medium' ? '#ff9944' : '#44ff44';
+            document.getElementById('question-location').textContent = item.location;
+            document.getElementById('question-text').textContent = item.question;
+            
+            // 顯示選項
+            const optionsHtml = item.options.map(opt => `
+                <div style="margin-bottom: 0.75rem;">
+                    <label style="display: flex; align-items: center; cursor: pointer; padding: 0.75rem; 
+                                  background: #f9f9f9; border-radius: 8px; border: 2px solid transparent;
+                                  transition: all 0.2s;">
+                        <input type="radio" name="answer" value="${opt.key}" 
+                               onchange="selectedAnswer='${opt.key}'; 
+                                        document.querySelectorAll('label').forEach(l => l.style.borderColor='transparent');
+                                        this.parentElement.style.borderColor='var(--cr-main-1)';"
+                               style="margin-right: 0.75rem; transform: scale(1.2);">
+                        <span><strong>${opt.key}:</strong> ${opt.text}</span>
+                    </label>
+                </div>
+            `).join('');
+            
+            document.getElementById('question-options').innerHTML = optionsHtml;
+            document.getElementById('current-question-card').style.display = 'block';
+            selectedAnswer = '';
+        }
+        
+        // 更新 Clarify 進度
+        function updateClarifyProgress() {
+            const total = clarificationItems.length;
+            const current = currentQuestionIndex;
+            const percentage = total > 0 ? (current / total) * 100 : 0;
+            
+            document.getElementById('clarify-progress-text').textContent = `${current} / ${total}`;
+            document.getElementById('clarify-progress-bar').style.width = percentage + '%';
+        }
+        
+        // 提交答案
+        function submitAnswer() {
+            if (!selectedAnswer) {
+                alert('請選擇一個答案');
+                return;
+            }
+            
+            const item = clarificationItems[currentQuestionIndex];
+            console.log(`Question ${item.id}: ${item.question} - Answer: ${selectedAnswer}`);
+            
+            // TODO: 將答案傳送到後端進行規格更新
+            
+            // 前進到下一題
+            currentQuestionIndex++;
+            showNextQuestion();
+        }
+        
+        // 跳過此題
+        function skipQuestion() {
+            if (confirm('確定要跳過此題嗎？')) {
+                currentQuestionIndex++;
+                showNextQuestion();
+            }
+        }
+        
+        // 複製最終規格
+        function copyFinalSpec() {
+            const finalSpec = `# 最終規格檔案\n\n## 資料模型 (DBML)\n\n\`\`\`dbml\n${currentDBML}\n\`\`\`\n\n## 功能模型 (Gherkin)\n\n\`\`\`gherkin\n${currentGherkin}\n\`\`\``;
+            
+            navigator.clipboard.writeText(finalSpec).then(() => {
+                alert('已複製最終規格到剪貼簿');
+            }).catch(err => {
+                console.error('複製失敗:', err);
+                alert('複製失敗');
+            });
+        }
+        
+        // 下載最終規格
+        function downloadFinalSpec() {
+            const finalSpec = `# 最終規格檔案\n\n## 資料模型 (DBML)\n\n\`\`\`dbml\n${currentDBML}\n\`\`\`\n\n## 功能模型 (Gherkin)\n\n\`\`\`gherkin\n${currentGherkin}\n\`\`\``;
+            
+            const blob = new Blob([finalSpec], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'final_spec.md';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,704 @@
+    <h2>AI 想法衍生器</h2>
+    <form id="llm-idea-form" onsubmit="return submitIdea(event)" style="margin-bottom:2rem;">
+        <label for="idea-input">請輸入你的想法：</label>
+        <input type="text" id="idea-input" name="idea" placeholder="隨便輸入幾句話..." required>
+        <button type="submit">AI 衍生三個詳細想法</button>
+        <div id="llm-idea-error" style="color:red;font-weight:bold;margin-top:1rem;"></div>
+    </form>
+    <div id="llm-idea-result"></div>
+    <script>
+    async function submitIdea(e) {
+        e.preventDefault();
+        const idea = document.getElementById('idea-input').value.trim();
+        if (!idea) {
+            document.getElementById('llm-idea-error').innerText = '請輸入想法';
+            return false;
+        }
+        document.getElementById('llm-idea-error').innerText = '';
+        document.getElementById('llm-idea-result').innerHTML = '<span>AI 正在思考...</span>';
+        try {
+            const resp = await fetch('/polls/llm-ideas/', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ idea })
+            });
+            const result = await resp.json();
+            if (result.error) {
+                document.getElementById('llm-idea-error').innerText = result.error;
+                document.getElementById('llm-idea-result').innerHTML = '';
+            } else if (result.ideas && Array.isArray(result.ideas)) {
+                let html = '<h3>AI 衍生的三個詳細想法：</h3><ol>';
+                for (const item of result.ideas) {
+                    html += `<li>${item}</li>`;
+                }
+                html += '</ol>';
+                document.getElementById('llm-idea-result').innerHTML = html;
+            } else {
+                document.getElementById('llm-idea-result').innerHTML = '<span>AI 沒有產生想法，請再試一次。</span>';
+            }
+        } catch (err) {
+            document.getElementById('llm-idea-error').innerText = 'AI 服務錯誤，請稍後再試';
+            document.getElementById('llm-idea-result').innerHTML = '';
+        }
+        return false;
+    }
+    </script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 規格產生器</title>
+    <style>
+        * { padding: 0; margin: 0; box-sizing: border-box; }
+        :root {
+            --cr-main-1: #2ac9de;
+            --cr-main-2: #f087f4;
+            --cr-1: color-mix(in srgb, var(--cr-main-1), var(--cr-main-2) 20%);
+            --cr-2: color-mix(in srgb, var(--cr-main-1), var(--cr-main-2) 35%);
+            --cr-3: color-mix(in srgb, var(--cr-main-1), var(--cr-main-2) 50%);
+            --cr-4: color-mix(in srgb, var(--cr-main-1), var(--cr-main-2) 65%);
+            --cr-5: color-mix(in srgb, var(--cr-main-1), var(--cr-main-2) 80%);
+        }
+        html, body { 
+            font-family: 'Poppins', sans-serif; 
+            height: 100%;
+            overflow-x: hidden;
+        }
+        body { 
+            background: whitesmoke; 
+            min-height: 100vh;
+            display: flex;
+        }
+        
+        /* 背景動畫球體 */
+        .blobs {
+            position: fixed;
+            z-index: -1;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            filter: blur(140px);
+        }
+        .blob {
+            width: max(240px, 28vw);
+            aspect-ratio: 1;
+            border-radius: 50%;
+            position: absolute;
+            top: 0; left: 0;
+        }
+        .blob:nth-of-type(1) { background: var(--cr-main-1); }
+        .blob:nth-of-type(2) { background: var(--cr-main-2); }
+        .blob:nth-of-type(3) { background: var(--cr-1); }
+        .blob:nth-of-type(4) { background: whitesmoke; }
+        .blob:nth-of-type(5) { background: var(--cr-3); }
+        .blob:nth-of-type(6) { background: var(--cr-4); }
+        .blob:nth-of-type(7) { background: var(--cr-2); }
+        
+        /* 側邊欄導航 */
+        .sidebar {
+            width: 280px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            box-shadow: 4px 0 24px rgba(44, 201, 222, 0.1);
+            overflow-y: auto;
+            z-index: 100;
+        }
+        
+        .sidebar-header {
+            padding: 2rem 1.5rem;
+            border-bottom: 2px solid rgba(42, 201, 222, 0.2);
+        }
+        
+        .sidebar-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, var(--cr-main-1), var(--cr-main-2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .nav-menu {
+            list-style: none;
+            padding: 1rem 0;
+        }
+        
+        .nav-item {
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+        }
+        
+        .nav-item:hover {
+            background: rgba(42, 201, 222, 0.1);
+            border-left-color: var(--cr-main-1);
+        }
+        
+        .nav-item.active {
+            background: rgba(240, 135, 244, 0.15);
+            border-left-color: var(--cr-main-2);
+            font-weight: bold;
+        }
+        
+        /* 主內容區域 */
+        .main-content {
+            margin-left: 280px;
+            flex: 1;
+            padding: 2rem;
+            width: calc(100% - 280px);
+        }
+        
+        /* 頂部工具欄 */
+        .toolbar {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 16px rgba(44, 201, 222, 0.08);
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .toolbar-title {
+            font-size: 2rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, var(--cr-main-1), var(--cr-main-2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .toolbar-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        /* 卡片網格系統 */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 16px rgba(44, 201, 222, 0.08);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(42, 201, 222, 0.1);
+        }
+        
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(240, 135, 244, 0.15);
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid rgba(42, 201, 222, 0.1);
+        }
+        
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .card-badge {
+            background: linear-gradient(135deg, var(--cr-main-1), var(--cr-main-2));
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        
+        .card-content {
+            min-height: 100px;
+            color: #555;
+            line-height: 1.6;
+        }
+        
+        .card-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        
+        /* 表單樣式 */
+        .form-section {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 4px 16px rgba(44, 201, 222, 0.08);
+            margin-bottom: 2rem;
+        }
+        
+        .form-section h2 {
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            color: #333;
+        }
+        
+        label { 
+            font-weight: 600; 
+            margin-top: 1rem; 
+            display: block;
+            color: #444;
+            margin-bottom: 0.5rem;
+        }
+        
+        input, textarea { 
+            width: 100%; 
+            border-radius: 8px; 
+            border: 2px solid rgba(42, 201, 222, 0.2); 
+            padding: 0.75rem;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--cr-main-1);
+            box-shadow: 0 0 0 3px rgba(42, 201, 222, 0.1);
+        }
+        
+        button { 
+            border-radius: 8px; 
+            background: var(--cr-main-1); 
+            color: #fff; 
+            border: none; 
+            padding: 0.75rem 1.5rem; 
+            font-weight: bold; 
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(42, 201, 222, 0.3);
+        }
+        
+        button[type="submit"] { 
+            background: linear-gradient(135deg, var(--cr-main-1), var(--cr-main-2));
+        }
+        
+        button.btn-secondary {
+            background: rgba(42, 201, 222, 0.1);
+            color: var(--cr-main-1);
+        }
+        
+        button.btn-secondary:hover {
+            background: rgba(42, 201, 222, 0.2);
+        }
+        
+        /* 錯誤訊息 */
+        .error-message { 
+            color: #e74c3c; 
+            font-weight: bold; 
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background: rgba(231, 76, 60, 0.1);
+            border-radius: 8px;
+            border-left: 4px solid #e74c3c;
+        }
+        
+        /* 響應式設計 */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+                width: 100%;
+            }
+            
+            .cards-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .toolbar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="blobs">
+        <div class="blob"></div>
+        <div class="blob"></div>
+        <div class="blob"></div>
+        <div class="blob"></div>
+        <div class="blob"></div>
+        <div class="blob"></div>
+        <div class="blob"></div>
+    </div>
+    
+    <!-- 側邊欄導航 -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-title">AI 規格產生器</div>
+        </div>
+        <ul class="nav-menu">
+            <li class="nav-item active" onclick="showSection('idea')">💡 想法衍生</li>
+            <li class="nav-item" onclick="showSection('generator')">📝 規格生成</li>
+            <li class="nav-item" onclick="showSection('results')">📊 生成結果</li>
+            <li class="nav-item" onclick="showSection('weight')">⚖️ 權重配置</li>
+        </ul>
+    </div>
+    
+    <!-- 主內容區域 -->
+    <div class="main-content">
+        <!-- 想法衍生區 -->
+        <div id="section-idea" class="content-section">
+            <div class="toolbar">
+                <h1 class="toolbar-title">AI 想法衍生器</h1>
+            </div>
+            
+            <div class="form-section">
+                <form id="llm-idea-form" onsubmit="return submitIdea(event)">
+                    <label for="idea-input">請輸入你的想法：</label>
+                    <input type="text" id="idea-input" name="idea" placeholder="隨便輸入幾句話，AI 會幫你衍生出三個詳細想法..." required>
+                    <button type="submit" style="margin-top: 1rem;">🚀 AI 衍生三個詳細想法</button>
+                    <div id="llm-idea-error" class="error-message" style="display:none;"></div>
+                </form>
+            </div>
+            
+            <div id="llm-idea-result"></div>
+        </div>
+        
+        <!-- 規格生成器區 -->
+        <div id="section-generator" class="content-section" style="display:none;">
+            <div class="toolbar">
+                <h1 class="toolbar-title">規格生成器</h1>
+            </div>
+    <script>
+        const MIN_SPEED = 0.5
+        const MAX_SPEED = 2
+        function randomNumber(min, max) {
+            return Math.random() * (max - min) + min
+        }
+        class Blob {
+            constructor(el) {
+                this.el = el
+                const boundingRect = this.el.getBoundingClientRect()
+                this.size = boundingRect.width
+                this.initialX = randomNumber(0, window.innerWidth - this.size)
+                this.initialY = randomNumber(0, window.innerHeight - this.size)
+                this.el.style.top = `${this.initialY}px`
+                this.el.style.left = `${this.initialX}px`
+                this.vx = randomNumber(MIN_SPEED, MAX_SPEED) * (Math.random() > 0.5 ? 1 : -1)
+                this.vy = randomNumber(MIN_SPEED, MAX_SPEED) * (Math.random() > 0.5 ? 1 : -1)
+                this.x = this.initialX
+                this.y = this.initialY
+            }
+            update() {
+                this.x += this.vx
+                this.y += this.vy
+                if (this.x >= window.innerWidth - this.size) {
+                    this.x = window.innerWidth - this.size
+                    this.vx *= -1
+                }
+                if (this.y >= window.innerHeight - this.size) {
+                    this.y = window.innerHeight - this.size
+                    this.vy *= -1
+                }
+                if (this.x <= 0) {
+                    this.x = 0
+                    this.vx *= -1
+                }
+                if (this.y <= 0) {
+                    this.y = 0
+                    this.vy *= -1
+                }
+                this.el.style.transform = `translate(${this.x - this.initialX}px, ${this.y - this.initialY}px)`
+            }
+        }
+        function initBlobs() {
+            const blobEls = document.querySelectorAll('.blob')
+            const blobs = Array.from(blobEls).map((blobEl) => new Blob(blobEl))
+            function update() {
+                requestAnimationFrame(update)
+                blobs.forEach((blob) => blob.update())
+            }
+            requestAnimationFrame(update)
+        }
+        initBlobs()
+    </script>
+                <details open>
+                    <summary>背景</summary>
+                    <div id="section-background">{{ spec_background|safe }}</div>
+                    <button type="button" onclick="copySection('background')">複製</button>
+                    <button type="button" onclick="downloadSection('background')">下載</button>
+                </details>
+                <details>
+                    <summary>目標</summary>
+                    <div id="section-goal">{{ spec_goal|safe }}</div>
+                    <button type="button" onclick="copySection('goal')">複製</button>
+                    <button type="button" onclick="downloadSection('goal')">下載</button>
+                </details>
+                <details>
+                    <summary>資料模型</summary>
+                    <div id="section-model">{{ spec_model|safe }}</div>
+                    <button type="button" onclick="copySection('model')">複製</button>
+                    <button type="button" onclick="downloadSection('model')">下載</button>
+                </details>
+                <details>
+                    <summary>功能規格</summary>
+                    <div id="section-feature">{{ spec_feature|safe }}</div>
+                    <button type="button" onclick="copySection('feature')">複製</button>
+                    <button type="button" onclick="downloadSection('feature')">下載</button>
+                </details>
+                <details>
+                    <summary>流程圖</summary>
+                    <div id="section-flow">{{ spec_flow|safe }}</div>
+                    <button type="button" onclick="copySection('flow')">複製</button>
+                    <button type="button" onclick="downloadSection('flow')">下載</button>
+                </details>
+                <details>
+                    <summary>API 規格</summary>
+                    <div id="section-api">{{ spec_api|safe }}</div>
+                    <button type="button" onclick="copySection('api')">複製</button>
+                    <button type="button" onclick="downloadSection('api')">下載</button>
+                </details>
+                <details>
+                    <summary>測試案例</summary>
+                    <div id="section-test">{{ spec_test|safe }}</div>
+                    <button type="button" onclick="copySection('test')">複製</button>
+                    <button type="button" onclick="downloadSection('test')">下載</button>
+                </details>
+                <details>
+                    <summary>術語表</summary>
+                    <div id="section-glossary">{{ spec_glossary|safe }}</div>
+                    <button type="button" onclick="copySection('glossary')">複製</button>
+                    <button type="button" onclick="downloadSection('glossary')">下載</button>
+                </details>
+                <script>
+                function copySection(section) {
+                    const text = document.getElementById('section-' + section).innerText;
+                    navigator.clipboard.writeText(text).then(() => {
+                        alert('已複製到剪貼簿');
+                    });
+                }
+                function downloadSection(section) {
+                    const text = document.getElementById('section-' + section).innerText;
+                    const blob = new Blob([text], {type: 'text/plain'});
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = section + '.txt';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                }
+                </script>
+                <h1>AI 規格產生器</h1>
+    <h2>權重配置</h2>
+    <form id="weight-config-form" onsubmit="return submitWeightConfig(event)">
+        <label for="weight-name">名稱</label>
+        <input type="text" id="weight-name" name="name" required>
+        <label for="score-a">A 權重</label>
+        <input type="number" id="score-a" name="score_a" min="0" max="1" step="0.01" value="0.25" required>
+        <label for="score-b">B 權重</label>
+        <input type="number" id="score-b" name="score_b" min="0" max="1" step="0.01" value="0.25" required>
+        <label for="score-c">C 權重</label>
+        <input type="number" id="score-c" name="score_c" min="0" max="1" step="0.01" value="0.25" required>
+        <label for="score-d">D 權重</label>
+        <input type="number" id="score-d" name="score_d" min="0" max="1" step="0.01" value="0.25" required>
+        <button type="submit">儲存權重</button>
+        <div id="weight-error" style="color: red; font-weight: bold; margin-top: 1rem;"></div>
+    </form>
+    <div id="weight-config-list"></div>
+    <script>
+    async function submitWeightConfig(e) {
+        e.preventDefault();
+        const data = {
+            name: document.getElementById('weight-name').value,
+            score_a: parseFloat(document.getElementById('score-a').value),
+            score_b: parseFloat(document.getElementById('score-b').value),
+            score_c: parseFloat(document.getElementById('score-c').value),
+            score_d: parseFloat(document.getElementById('score-d').value),
+        };
+        if (Math.abs(data.score_a + data.score_b + data.score_c + data.score_d - 1.0) > 1e-6) {
+            document.getElementById('weight-error').innerText = '分數總和必須等於 1.0';
+            return false;
+        }
+        document.getElementById('weight-error').innerText = '';
+        const resp = await fetch('/polls/weight-config/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        const result = await resp.json();
+        if (result.error) {
+            document.getElementById('weight-error').innerText = result.error;
+        } else {
+            document.getElementById('weight-error').innerText = '';
+            loadWeightConfigs();
+        }
+        return false;
+    }
+    async function loadWeightConfigs() {
+        const resp = await fetch('/polls/weight-config/');
+        const result = await resp.json();
+        let html = '<h3>現有權重配置</h3><ul>';
+        for (const c of result.configs) {
+            html += `<li>${c.name}: A=${c.score_a}, B=${c.score_b}, C=${c.score_c}, D=${c.score_d}</li>`;
+        }
+        html += '</ul>';
+        document.getElementById('weight-config-list').innerHTML = html;
+    }
+    window.onload = loadWeightConfigs;
+    </script>
+                <label for="project_goal">專案目標 (Project Goal) <span style="color:red">*</span></label>
+            <textarea id="project_goal" name="project_goal" placeholder="簡述專案想達成的目標" required>{{ project_goal }}</textarea>
+
+            <label for="core_features">核心功能 (Core Features) <span style="color:red">*</span></label>
+            <textarea id="core_features" name="core_features" placeholder="主要功能有哪些？" required>{{ core_features }}</textarea>
+
+            <label for="technical_constraints">技術限制 (Technical Constraints) <span style="color:red">*</span></label>
+            <textarea id="technical_constraints" name="technical_constraints" placeholder="有無指定的程式語言、框架或平台？" required>{{ technical_constraints }}</textarea>
+
+            <label for="target_audience">目標使用者 (Target Audience) <span style="color:red">*</span></label>
+            <textarea id="target_audience" name="target_audience" placeholder="這個專案是做給誰用的？" required>{{ target_audience }}</textarea>
+
+            <div id="form-error" style="color: red; font-weight: bold; margin-bottom: 1rem;">
+                {% if form_error %}{{ form_error }}{% endif %}
+            </div>
+            <button type="submit" id="submit-btn">生成規格文件</button>
+            <button type="button" id="retry-btn" style="display:none; background: #e74c3c;">重試生成</button>
+        </form>
+
+        {% if error %}
+        <div class="error-message" id="error-message">
+            {{ error }}
+            <button type="button" onclick="retryGeneration()" style="margin-top: 0.5rem;">重試</button>
+        </div>
+        {% endif %}
+
+        <div id="loading-indicator" style="display:none; text-align:center; margin-top:2rem;">
+            <div style="font-size:1.5rem; color: var(--cr-main-1);">⏳ AI 正在生成規格文件...</div>
+        </div>
+
+        <div id="result-container" style="{% if not result %}display:none;{% endif %}">
+            <div class="result-title">生成結果</div>
+            <button type="button" onclick="downloadAllSections()" style="margin-bottom:1rem;">下載完整文件</button>
+            <div id="result" class="mermaid">
+                {{ result|safe }}
+            </div>
+        </div>
+        
+        <script>
+        // 表單驗證與提交
+        document.querySelector('form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const projectGoal = document.getElementById('project_goal').value.trim();
+            const coreFeatures = document.getElementById('core_features').value.trim();
+            const technicalConstraints = document.getElementById('technical_constraints').value.trim();
+            const targetAudience = document.getElementById('target_audience').value.trim();
+            
+            const errorDiv = document.getElementById('form-error');
+            
+            // 驗證所有欄位
+            if (!projectGoal || !coreFeatures || !technicalConstraints || !targetAudience) {
+                errorDiv.innerText = '請填寫所有必填欄位（標記 * 者）';
+                errorDiv.style.display = 'block';
+                return false;
+            }
+            
+            errorDiv.innerText = '';
+            errorDiv.style.display = 'none';
+            
+            // 顯示載入指示器
+            document.getElementById('loading-indicator').style.display = 'block';
+            document.getElementById('submit-btn').disabled = true;
+            document.getElementById('result-container').style.display = 'none';
+            
+            // 提交表單
+            this.submit();
+        });
+        
+        // 重試功能
+        function retryGeneration() {
+            document.getElementById('error-message').style.display = 'none';
+            document.querySelector('form').submit();
+        }
+        
+        // 下載完整文件
+        function downloadAllSections() {
+            let fullText = '';
+            const sections = ['background', 'goal', 'model', 'feature', 'flow', 'api', 'test', 'glossary'];
+            const titles = ['背景說明', '目標', '資料模型', '功能規格', '流程圖', 'API 規格', '測試案例', '術語表'];
+            
+            sections.forEach((section, index) => {
+                const element = document.getElementById('section-' + section);
+                if (element) {
+                    fullText += `\n\n========== ${titles[index]} ==========\n\n`;
+                    fullText += element.innerText;
+                }
+            });
+            
+            const blob = new Blob([fullText], {type: 'text/plain;charset=utf-8'});
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'specification_full.txt';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        // 即時驗證權重總和
+        ['score-a', 'score-b', 'score-c', 'score-d'].forEach(id => {
+            document.getElementById(id)?.addEventListener('input', function() {
+                const a = parseFloat(document.getElementById('score-a')?.value || 0);
+                const b = parseFloat(document.getElementById('score-b')?.value || 0);
+                const c = parseFloat(document.getElementById('score-c')?.value || 0);
+                const d = parseFloat(document.getElementById('score-d')?.value || 0);
+                const total = a + b + c + d;
+                const errorDiv = document.getElementById('weight-error');
+                
+                if (errorDiv) {
+                    if (Math.abs(total - 1.0) > 1e-6) {
+                        errorDiv.innerText = `當前總和: ${total.toFixed(2)} (必須等於 1.0)`;
+                        errorDiv.style.color = '#e74c3c';
+                    } else {
+                        errorDiv.innerText = '✓ 權重總和正確';
+                        errorDiv.style.color = '#27ae60';
+                    }
+                }
+            });
+        });
+        </script>
+    </div>
+    <script>mermaid.initialize({startOnLoad:true});</script>
+</body>
+</html>

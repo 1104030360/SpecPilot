@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>權重配置管理</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; padding: 2rem; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; margin-bottom: 1.5rem; }
+        h2 { color: #34495e; margin-top: 2rem; margin-bottom: 1rem; font-size: 1.3rem; }
+        .form-group { margin-bottom: 1.2rem; }
+        label { display: block; font-weight: 600; color: #555; margin-bottom: 0.5rem; }
+        input[type="text"], input[type="number"] { width: 100%; padding: 0.6rem; border: 1px solid #ddd; border-radius: 6px; font-size: 1rem; }
+        input[type="number"] { width: 150px; }
+        .weight-inputs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1rem; }
+        .weight-input { display: flex; flex-direction: column; }
+        .total-display { background: #ecf0f1; padding: 1rem; border-radius: 6px; margin-bottom: 1rem; font-weight: 600; }
+        .total-display.valid { background: #d4edda; color: #155724; }
+        .total-display.invalid { background: #f8d7da; color: #721c24; }
+        button { background: #3498db; color: white; padding: 0.7rem 1.5rem; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem; font-weight: 600; margin-right: 0.5rem; }
+        button:hover { background: #2980b9; }
+        button.delete { background: #e74c3c; }
+        button.delete:hover { background: #c0392b; }
+        .error { color: #e74c3c; font-weight: 600; margin-top: 0.5rem; }
+        .success { color: #27ae60; font-weight: 600; margin-top: 0.5rem; }
+        .config-list { margin-top: 1.5rem; }
+        .config-item { background: #f8f9fa; padding: 1rem; border-radius: 6px; margin-bottom: 1rem; border-left: 4px solid #3498db; }
+        .config-item h3 { color: #2c3e50; margin-bottom: 0.5rem; }
+        .config-item p { color: #7f8c8d; margin-bottom: 0.3rem; }
+        .ticket-test { background: #fff3cd; padding: 1.5rem; border-radius: 6px; margin-top: 2rem; border-left: 4px solid #ffc107; }
+        .ticket-result { background: #d1ecf1; padding: 1rem; border-radius: 6px; margin-top: 1rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚖️ 權重配置管理</h1>
+        
+        <div class="form-group">
+            <label for="config-name">配置名稱 *</label>
+            <input type="text" id="config-name" placeholder="例如：預設權重">
+        </div>
+        
+        <div class="weight-inputs">
+            <div class="weight-input">
+                <label for="score-a">Score A</label>
+                <input type="number" id="score-a" min="0" max="1" step="0.01" value="0.25">
+            </div>
+            <div class="weight-input">
+                <label for="score-b">Score B</label>
+                <input type="number" id="score-b" min="0" max="1" step="0.01" value="0.25">
+            </div>
+            <div class="weight-input">
+                <label for="score-c">Score C</label>
+                <input type="number" id="score-c" min="0" max="1" step="0.01" value="0.25">
+            </div>
+            <div class="weight-input">
+                <label for="score-d">Score D</label>
+                <input type="number" id="score-d" min="0" max="1" step="0.01" value="0.25">
+            </div>
+        </div>
+        
+        <div class="total-display" id="total-display">
+            總和：1.00 ✓
+        </div>
+        
+        <button onclick="saveConfig()">儲存配置</button>
+        <button onclick="resetForm()" style="background: #95a5a6;">重置</button>
+        
+        <div id="message"></div>
+        
+        <h2>📋 現有配置</h2>
+        <div class="config-list" id="config-list">
+            <p style="color: #7f8c8d;">載入中...</p>
+        </div>
+        
+        <div class="ticket-test">
+            <h2>🎯 Ticket 分數計算測試</h2>
+            <p style="margin-bottom: 1rem; color: #856404;">選擇一個權重配置來測試 Ticket 分數計算</p>
+            
+            <div class="form-group">
+                <label for="test-config">選擇配置</label>
+                <select id="test-config" style="width: 100%; padding: 0.6rem; border: 1px solid #ddd; border-radius: 6px; font-size: 1rem;">
+                    <option value="">-- 請選擇 --</option>
+                </select>
+            </div>
+            
+            <div class="weight-inputs">
+                <div class="weight-input">
+                    <label for="value-a">Value A</label>
+                    <input type="number" id="value-a" step="0.1" value="10">
+                </div>
+                <div class="weight-input">
+                    <label for="value-b">Value B</label>
+                    <input type="number" id="value-b" step="0.1" value="20">
+                </div>
+                <div class="weight-input">
+                    <label for="value-c">Value C</label>
+                    <input type="number" id="value-c" step="0.1" value="30">
+                </div>
+                <div class="weight-input">
+                    <label for="value-d">Value D</label>
+                    <input type="number" id="value-d" step="0.1" value="40">
+                </div>
+            </div>
+            
+            <button onclick="calculateScore()">計算分數</button>
+            
+            <div class="ticket-result" id="ticket-result" style="display:none;">
+                <strong>計算結果：</strong><br>
+                <span id="calculation-detail"></span>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let configs = [];
+        
+        // 更新權重總和顯示
+        function updateTotal() {
+            const a = parseFloat(document.getElementById('score-a').value) || 0;
+            const b = parseFloat(document.getElementById('score-b').value) || 0;
+            const c = parseFloat(document.getElementById('score-c').value) || 0;
+            const d = parseFloat(document.getElementById('score-d').value) || 0;
+            const total = a + b + c + d;
+            
+            const display = document.getElementById('total-display');
+            display.textContent = `總和：${total.toFixed(2)}`;
+            
+            if (Math.abs(total - 1.0) < 1e-6) {
+                display.textContent += ' ✓';
+                display.className = 'total-display valid';
+            } else {
+                display.textContent += ' ✗ (必須等於 1.0)';
+                display.className = 'total-display invalid';
+            }
+        }
+        
+        // 監聽輸入變化
+        ['score-a', 'score-b', 'score-c', 'score-d'].forEach(id => {
+            document.getElementById(id).addEventListener('input', updateTotal);
+        });
+        
+        // 儲存配置
+        async function saveConfig() {
+            const name = document.getElementById('config-name').value.trim();
+            const a = parseFloat(document.getElementById('score-a').value);
+            const b = parseFloat(document.getElementById('score-b').value);
+            const c = parseFloat(document.getElementById('score-c').value);
+            const d = parseFloat(document.getElementById('score-d').value);
+            
+            if (!name) {
+                showMessage('請輸入配置名稱', 'error');
+                return;
+            }
+            
+            if (Math.abs(a + b + c + d - 1.0) > 1e-6) {
+                showMessage('權重總和必須等於 1.0', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/polls/weight-config/', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({name, score_a: a, score_b: b, score_c: c, score_d: d})
+                });
+                
+                const result = await response.json();
+                
+                if (result.error) {
+                    showMessage(result.error, 'error');
+                } else {
+                    showMessage('配置儲存成功！', 'success');
+                    resetForm();
+                    loadConfigs();
+                }
+            } catch (error) {
+                showMessage('儲存失敗：' + error.message, 'error');
+            }
+        }
+        
+        // 載入配置列表
+        async function loadConfigs() {
+            try {
+                const response = await fetch('/polls/weight-config/');
+                const result = await response.json();
+                configs = result.configs || [];
+                
+                const listDiv = document.getElementById('config-list');
+                const selectEl = document.getElementById('test-config');
+                
+                if (configs.length === 0) {
+                    listDiv.innerHTML = '<p style="color: #7f8c8d;">尚無配置</p>';
+                    selectEl.innerHTML = '<option value="">-- 請選擇 --</option>';
+                } else {
+                    listDiv.innerHTML = '';
+                    selectEl.innerHTML = '<option value="">-- 請選擇 --</option>';
+                    
+                    configs.forEach(config => {
+                        const div = document.createElement('div');
+                        div.className = 'config-item';
+                        div.innerHTML = `
+                            <h3>${config.name}</h3>
+                            <p>Score A: ${config.score_a} | Score B: ${config.score_b} | Score C: ${config.score_c} | Score D: ${config.score_d}</p>
+                            <button onclick="deleteConfig(${config.id});" class="delete">刪除</button>
+                        `;
+                        listDiv.appendChild(div);
+                        
+                        const option = document.createElement('option');
+                        option.value = config.id;
+                        option.textContent = config.name;
+                        selectEl.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('載入失敗:', error);
+            }
+        }
+        
+        // 刪除配置
+        async function deleteConfig(id) {
+            if (!confirm('確定要刪除此配置嗎？')) return;
+            
+            try {
+                const response = await fetch(`/polls/weight-config/${id}/`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    showMessage('配置已刪除', 'success');
+                    loadConfigs();
+                } else {
+                    showMessage('刪除失敗', 'error');
+                }
+            } catch (error) {
+                showMessage('刪除失敗：' + error.message, 'error');
+            }
+        }
+        
+        // 計算 Ticket 分數
+        function calculateScore() {
+            const configId = document.getElementById('test-config').value;
+            if (!configId) {
+                alert('請先選擇一個配置');
+                return;
+            }
+            
+            const config = configs.find(c => c.id == configId);
+            if (!config) return;
+            
+            const va = parseFloat(document.getElementById('value-a').value);
+            const vb = parseFloat(document.getElementById('value-b').value);
+            const vc = parseFloat(document.getElementById('value-c').value);
+            const vd = parseFloat(document.getElementById('value-d').value);
+            
+            const score = va * config.score_a + vb * config.score_b + vc * config.score_c + vd * config.score_d;
+            
+            const resultDiv = document.getElementById('ticket-result');
+            const detailDiv = document.getElementById('calculation-detail');
+            
+            detailDiv.innerHTML = `
+                配置：${config.name}<br>
+                計算式：${va} × ${config.score_a} + ${vb} × ${config.score_b} + ${vc} × ${config.score_c} + ${vd} × ${config.score_d}<br>
+                <strong style="font-size: 1.2rem; color: #0056b3;">總分：${score.toFixed(2)}</strong>
+            `;
+            resultDiv.style.display = 'block';
+        }
+        
+        // 顯示訊息
+        function showMessage(msg, type) {
+            const msgDiv = document.getElementById('message');
+            msgDiv.textContent = msg;
+            msgDiv.className = type;
+            setTimeout(() => msgDiv.textContent = '', 3000);
+        }
+        
+        // 重置表單
+        function resetForm() {
+            document.getElementById('config-name').value = '';
+            document.getElementById('score-a').value = '0.25';
+            document.getElementById('score-b').value = '0.25';
+            document.getElementById('score-c').value = '0.25';
+            document.getElementById('score-d').value = '0.25';
+            updateTotal();
+        }
+        
+        // 初始化
+        window.onload = () => {
+            loadConfigs();
+            updateTotal();
+        };
+    </script>
+</body>
+</html>

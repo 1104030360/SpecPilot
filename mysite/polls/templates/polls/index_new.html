@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 規格產生器 - 新版布局</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --cr-main-1: #2ac9de;
+            --cr-main-2: #f087f4;
+            --cr-1: color-mix(in srgb, var(--cr-main-1), var(--cr-main-2) 20%);
+            --cr-2: color-mix(in srgb, var(--cr-main-1), var(--cr-main-2) 35%);
+            --cr-3: color-mix(in srgb, var(--cr-main-1), var(--cr-main-2) 50%);
+            --cr-4: color-mix(in srgb, var(--cr-main-1), var(--cr-main-2) 65%);
+            --cr-5: color-mix(in srgb, var(--cr-main-1), var(--cr-main-2) 80%);
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: whitesmoke;
+            overflow-x: hidden;
+        }
+        
+        /* 動畫背景球體 */
+        .blobs {
+            position: fixed;
+            z-index: -1;
+            top: 0; left: 0;
+            width: 100%; height: 100vh;
+            pointer-events: none;
+            filter: blur(140px);
+        }
+        
+        .blob {
+            width: max(240px, 28vw);
+            aspect-ratio: 1;
+            border-radius: 50%;
+            position: absolute;
+        }
+        
+        .blob:nth-of-type(1) { background: var(--cr-main-1); }
+        .blob:nth-of-type(2) { background: var(--cr-main-2); }
+        .blob:nth-of-type(3) { background: var(--cr-1); }
+        .blob:nth-of-type(4) { background: whitesmoke; }
+        .blob:nth-of-type(5) { background: var(--cr-3); }
+        .blob:nth-of-type(6) { background: var(--cr-4); }
+        .blob:nth-of-type(7) { background: var(--cr-2); }
+        
+        /* 容器布局 */
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        /* 左側導航 */
+        .sidebar {
+            width: 280px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 4px 0 24px rgba(42, 201, 222, 0.1);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+        
+        .sidebar-brand {
+            padding: 2rem 1.5rem;
+            border-bottom: 2px solid rgba(42, 201, 222, 0.15);
+        }
+        
+        .brand-title {
+            font-size: 1.6rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--cr-main-1), var(--cr-main-2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .nav-menu {
+            list-style: none;
+            padding: 1.5rem 0;
+        }
+        
+        .nav-item {
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            border-left: 3px solid transparent;
+            font-weight: 500;
+        }
+        
+        .nav-item:hover {
+            background: rgba(42, 201, 222, 0.08);
+            border-left-color: var(--cr-main-1);
+        }
+        
+        .nav-item.active {
+            background: linear-gradient(90deg, rgba(240, 135, 244, 0.15), transparent);
+            border-left-color: var(--cr-main-2);
+            font-weight: 600;
+        }
+        
+        .nav-icon {
+            font-size: 1.25rem;
+        }
+        
+        /* 主內容區 */
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 2rem;
+        }
+        
+        .content-section {
+            display: none;
+        }
+        
+        .content-section.active {
+            display: block;
+        }
+        
+        /* 頁面標題 */
+        .page-header {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 20px rgba(42, 201, 222, 0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .page-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--cr-main-1), var(--cr-main-2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        /* 卡片網格 */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 4px 16px rgba(42, 201, 222, 0.08);
+            transition: all 0.3s;
+            border: 1px solid rgba(42, 201, 222, 0.1);
+        }
+        
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 32px rgba(240, 135, 244, 0.15);
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid rgba(42, 201, 222, 0.1);
+        }
+        
+        .card-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .card-badge {
+            background: linear-gradient(135deg, var(--cr-main-1), var(--cr-main-2));
+            color: white;
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .card-content {
+            color: #555;
+            line-height: 1.8;
+            min-height: 120px;
+        }
+        
+        .card-actions {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(0, 0, 0, 0.06);
+        }
+        
+        /* 表單樣式 */
+        .form-card {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 4px 16px rgba(42, 201, 222, 0.08);
+            margin-bottom: 2rem;
+        }
+        
+        label {
+            display: block;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        input[type="text"],
+        input[type="number"],
+        textarea {
+            width: 100%;
+            padding: 0.875rem;
+            border: 2px solid rgba(42, 201, 222, 0.2);
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s;
+            background: white;
+            font-family: inherit;
+        }
+        
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--cr-main-1);
+            box-shadow: 0 0 0 4px rgba(42, 201, 222, 0.1);
+        }
+        
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        button {
+            padding: 0.875rem 1.75rem;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: linear-gradient(135deg, var(--cr-main-1), var(--cr-main-2));
+            color: white;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(42, 201, 222, 0.3);
+        }
+        
+        button.btn-secondary {
+            background: rgba(42, 201, 222, 0.12);
+            color: var(--cr-main-1);
+        }
+        
+        button.btn-secondary:hover {
+            background: rgba(42, 201, 222, 0.2);
+        }
+        
+        .error-message {
+            background: rgba(231, 76, 60, 0.1);
+            color: #e74c3c;
+            padding: 1rem;
+            border-radius: 10px;
+            border-left: 4px solid #e74c3c;
+            margin-top: 1rem;
+            font-weight: 600;
+        }
+        
+        /* Loading 彈窗 */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        
+        .loading-overlay.show {
+            display: flex;
+        }
+        
+        .loading-content {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 3rem;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: fadeInScale 0.3s ease;
+        }
+        
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(42, 201, 222, 0.2);
+            border-top: 4px solid var(--cr-main-1);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1.5rem;
+        }
+        
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            font-size: 1.25rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, var(--cr-main-1), var(--cr-main-2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+        
+        .loading-subtext {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        /* 響應式設計 */
+        @media (max-width: 968px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s;
+            }
+            
+            .sidebar.mobile-show {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .cards-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading 彈窗 -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">AI 正在生成規格文件</div>
+            <div class="loading-subtext">請稍候，這可能需要幾秒鐘...</div>
+        </div>
+    </div>
+    
+    <!-- 背景動畫 -->
+    <div class="blobs">
+        <div class="blob"></div>
+        <div class="blob"></div>
+        <div class="blob"></div>
+        <div class="blob"></div>
+        <div class="blob"></div>
+        <div class="blob"></div>
+        <div class="blob"></div>
+    </div>
+    
+    <div class="container">
+        <!-- 側邊欄 -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-title">規格產生器</div>
+            </div>
+                        <nav class="nav-menu">
+                <a href="#" class="nav-item active" onclick="switchSection('idea'); return false;">
+                    <span class="nav-icon"></span> AI 想法衍生
+                </a>
+                <a href="#" class="nav-item" onclick="switchSection('generator'); return false;">
+                    <span class="nav-icon"></span> 規格生成器
+                </a>
+                <a href="#" class="nav-item" onclick="switchSection('results'); return false;">
+                    <span class="nav-icon"></span> 生成結果
+                </a>
+                <a href="#" class="nav-item" onclick="switchSection('weight'); return false;">
+                    權重配置
+                </a>
+            </nav>
+        </aside>
+        
+        <!-- 主內容 -->
+        <main class="main-content">
+            <!-- AI 想法衍生區 -->
+            <section id="section-idea" class="content-section active">
+                <div class="page-header">
+                    <h1 class="page-title">AI 想法衍生器</h1>
+                </div>
+                
+                <div class="form-card">
+                    <form id="llm-idea-form" onsubmit="return submitIdea(event)">
+                        <label for="idea-input">輸入你的想法</label>
+                        <input type="text" id="idea-input" placeholder="隨便輸入幾句話，AI 會幫你衍生出三個詳細想法..." required>
+                        <button type="submit" style="margin-top: 1.5rem;">AI 衍生三個詳細想法</button>
+                        <div id="llm-idea-error" class="error-message" style="display:none;"></div>
+                    </form>
+                </div>
+                
+                <div id="llm-idea-result-cards"></div>
+            </section>
+            
+            <!-- 規格生成器區 -->
+            <section id="section-generator" class="content-section">
+                <div class="page-header">
+                    <h1 class="page-title">規格生成器</h1>
+                </div>
+                
+                <div class="form-card">
+                    <form method="POST" id="spec-form" onsubmit="showLoading()">
+                        {% csrf_token %}
+                        <label for="project_goal">專案目標 <span style="color:#e74c3c">*</span></label>
+                        <textarea id="project_goal" name="project_goal" placeholder="簡述專案想達成的目標" required>{{ project_goal }}</textarea>
+                        
+                        <label for="core_features">核心功能 <span style="color:#e74c3c">*</span></label>
+                        <textarea id="core_features" name="core_features" placeholder="主要功能有哪些？" required>{{ core_features }}</textarea>
+                        
+                        <label for="technical_constraints">技術限制 <span style="color:#e74c3c">*</span></label>
+                        <textarea id="technical_constraints" name="technical_constraints" placeholder="有無指定的程式語言、框架或平台？" required>{{ technical_constraints }}</textarea>
+                        
+                        <label for="target_audience">目標使用者 <span style="color:#e74c3c">*</span></label>
+                        <textarea id="target_audience" name="target_audience" placeholder="這個專案是做給誰用的？" required>{{ target_audience }}</textarea>
+                        
+                        {% if form_error %}
+                        <div class="error-message">{{ form_error }}</div>
+                        {% endif %}
+                        
+                        <button type="submit" style="margin-top: 1.5rem;">生成規格文件</button>
+                    </form>
+                </div>
+            </section>
+            
+            <!-- 生成結果區 -->
+            <section id="section-results" class="content-section">
+                <div class="page-header">
+                    <h1 class="page-title">生成結果</h1>
+                </div>
+                
+                <div class="cards-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">背景說明</h3>
+                            <span class="card-badge">Background</span>
+                        </div>
+                        <div class="card-content" id="section-background">
+                            {{ spec_background|safe }}
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn-secondary" onclick="copySection('background')">複製</button>
+                            <button class="btn-secondary" onclick="downloadSection('background', '背景說明')">下載 MD</button>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">專案目標</h3>
+                            <span class="card-badge">Goal</span>
+                        </div>
+                        <div class="card-content" id="section-goal">
+                            {{ spec_goal|safe }}
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn-secondary" onclick="copySection('goal')">複製</button>
+                            <button class="btn-secondary" onclick="downloadSection('goal', '專案目標')">下載 MD</button>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">資料模型</h3>
+                            <span class="card-badge">Model</span>
+                        </div>
+                        <div class="card-content" id="section-model">
+                            {{ spec_model|safe }}
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn-secondary" onclick="copySection('model')">複製</button>
+                            <button class="btn-secondary" onclick="downloadSection('model', '資料模型')">下載 MD</button>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">功能規格</h3>
+                            <span class="card-badge">Features</span>
+                        </div>
+                        <div class="card-content" id="section-feature">
+                            {{ spec_feature|safe }}
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn-secondary" onclick="copySection('feature')">複製</button>
+                            <button class="btn-secondary" onclick="downloadSection('feature', '功能規格')">下載 MD</button>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">流程圖</h3>
+                            <span class="card-badge">Flow</span>
+                        </div>
+                        <div class="card-content" id="section-flow">
+                            {{ spec_flow|safe }}
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn-secondary" onclick="copySection('flow')">複製</button>
+                            <button class="btn-secondary" onclick="downloadMermaidCode()">下載 MMD</button>
+                            <button class="btn-secondary" onclick="downloadMermaidImage()">下載圖檔</button>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">API 規格</h3>
+                            <span class="card-badge">API</span>
+                        </div>
+                        <div class="card-content" id="section-api">
+                            {{ spec_api|safe }}
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn-secondary" onclick="copySection('api')">複製</button>
+                            <button class="btn-secondary" onclick="downloadSection('api', 'API規格')">下載 MD</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- 權重配置區 -->
+            <section id="section-weight" class="content-section">
+                <div class="page-header">
+                    <h1 class="page-title">權重配置</h1>
+                </div>
+                
+                <div class="form-card">
+                    <form id="weight-config-form" onsubmit="return submitWeightConfig(event)">
+                        <label for="weight-name">配置名稱</label>
+                        <input type="text" id="weight-name" required>
+                        
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                            <div>
+                                <label for="score-a">A 權重</label>
+                                <input type="number" id="score-a" min="0" max="1" step="0.01" value="0.25" required>
+                            </div>
+                            <div>
+                                <label for="score-b">B 權重</label>
+                                <input type="number" id="score-b" min="0" max="1" step="0.01" value="0.25" required>
+                            </div>
+                            <div>
+                                <label for="score-c">C 權重</label>
+                                <input type="number" id="score-c" min="0" max="1" step="0.01" value="0.25" required>
+                            </div>
+                            <div>
+                                <label for="score-d">D 權重</label>
+                                <input type="number" id="score-d" min="0" max="1" step="0.01" value="0.25" required>
+                            </div>
+                        </div>
+                        
+                        <div id="weight-error" class="error-message" style="display:none;"></div>
+                        <button type="submit" style="margin-top: 1.5rem;">💾 儲存權重配置</button>
+                    </form>
+                </div>
+                
+                <div id="weight-config-list"></div>
+            </section>
+        </main>
+    </div>
+    
+    <script>
+        // 背景動畫
+        const MIN_SPEED = 0.5;
+        const MAX_SPEED = 2;
+        
+        function randomNumber(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+        
+        class Blob {
+            constructor(el) {
+                this.el = el;
+                const boundingRect = this.el.getBoundingClientRect();
+                this.size = boundingRect.width;
+                this.initialX = randomNumber(0, window.innerWidth - this.size);
+                this.initialY = randomNumber(0, window.innerHeight - this.size);
+                this.el.style.top = `${this.initialY}px`;
+                this.el.style.left = `${this.initialX}px`;
+                this.vx = randomNumber(MIN_SPEED, MAX_SPEED) * (Math.random() > 0.5 ? 1 : -1);
+                this.vy = randomNumber(MIN_SPEED, MAX_SPEED) * (Math.random() > 0.5 ? 1 : -1);
+                this.x = this.initialX;
+                this.y = this.initialY;
+            }
+            
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                if (this.x >= window.innerWidth - this.size) {
+                    this.x = window.innerWidth - this.size;
+                    this.vx *= -1;
+                }
+                if (this.y >= window.innerHeight - this.size) {
+                    this.y = window.innerHeight - this.size;
+                    this.vy *= -1;
+                }
+                if (this.x <= 0) {
+                    this.x = 0;
+                    this.vx *= -1;
+                }
+                if (this.y <= 0) {
+                    this.y = 0;
+                    this.vy *= -1;
+                }
+                this.el.style.transform = `translate(${this.x - this.initialX}px, ${this.y - this.initialY}px)`;
+            }
+        }
+        
+        function initBlobs() {
+            const blobEls = document.querySelectorAll('.blob');
+            const blobs = Array.from(blobEls).map((blobEl) => new Blob(blobEl));
+            function update() {
+                requestAnimationFrame(update);
+                blobs.forEach((blob) => blob.update());
+            }
+            requestAnimationFrame(update);
+        }
+        
+        initBlobs();
+        
+        // 切換區塊
+        function switchSection(section) {
+            // 隱藏所有區塊
+            document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            
+            // 顯示選中的區塊
+            const targetSection = document.getElementById(`section-${section}`);
+            if (targetSection) {
+                targetSection.classList.add('active');
+            }
+            
+            // 高亮對應的導航項
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => {
+                if (item.getAttribute('onclick') && item.getAttribute('onclick').includes(section)) {
+                    item.classList.add('active');
+                }
+            });
+        }
+        
+        // 規格表單提交後自動切換到結果區
+        {% if spec_background or spec_goal or spec_model or spec_feature or spec_flow or spec_api %}
+        document.addEventListener('DOMContentLoaded', function() {
+            // 如果有生成結果，自動切換到結果區
+            switchSection('results');
+        });
+        {% endif %}
+        
+        // AI 想法衍生
+        async function submitIdea(e) {
+            e.preventDefault();
+            const idea = document.getElementById('idea-input').value.trim();
+            const errorDiv = document.getElementById('llm-idea-error');
+            const resultDiv = document.getElementById('llm-idea-result-cards');
+            
+            if (!idea) {
+                errorDiv.textContent = '請輸入想法';
+                errorDiv.style.display = 'block';
+                return false;
+            }
+            
+            errorDiv.style.display = 'none';
+            resultDiv.innerHTML = '<div class="card"><div class="card-content">🤔 AI 正在思考中...</div></div>';
+            
+            try {
+                const resp = await fetch('/polls/llm-ideas/', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ idea })
+                });
+                const result = await resp.json();
+                
+                if (result.error) {
+                    errorDiv.textContent = result.error;
+                    errorDiv.style.display = 'block';
+                    resultDiv.innerHTML = '';
+                } else if (result.ideas && Array.isArray(result.ideas)) {
+                    let html = '<div class="cards-grid">';
+                    result.ideas.forEach((item, index) => {
+                        html += `
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">想法 ${index + 1}</h3>
+                                    <span class="card-badge">AI Generated</span>
+                                </div>
+                                <div class="card-content">${item}</div>
+                                <div class="card-actions">
+                                    <button class="btn-secondary" onclick="copyText('${item.replace(/'/g, "\\'")}')">📋 複製</button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                    resultDiv.innerHTML = html;
+                } else {
+                    resultDiv.innerHTML = '<div class="card"><div class="card-content">AI 沒有產生想法，請再試一次。</div></div>';
+                }
+            } catch (err) {
+                errorDiv.textContent = 'AI 服務錯誤，請稍後再試';
+                errorDiv.style.display = 'block';
+                resultDiv.innerHTML = '';
+            }
+            return false;
+        }
+        
+        // 權重配置
+        async function submitWeightConfig(e) {
+            e.preventDefault();
+            const data = {
+                name: document.getElementById('weight-name').value,
+                score_a: parseFloat(document.getElementById('score-a').value),
+                score_b: parseFloat(document.getElementById('score-b').value),
+                score_c: parseFloat(document.getElementById('score-c').value),
+                score_d: parseFloat(document.getElementById('score-d').value),
+            };
+            
+            const errorDiv = document.getElementById('weight-error');
+            
+            if (Math.abs(data.score_a + data.score_b + data.score_c + data.score_d - 1.0) > 1e-6) {
+                errorDiv.textContent = '分數總和必須等於 1.0';
+                errorDiv.style.display = 'block';
+                return false;
+            }
+            
+            try {
+                const resp = await fetch('/polls/weight-config/', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                const result = await resp.json();
+                
+                if (result.error) {
+                    errorDiv.textContent = result.error;
+                    errorDiv.style.display = 'block';
+                } else {
+                    errorDiv.style.display = 'none';
+                    loadWeightConfigs();
+                }
+            } catch (err) {
+                errorDiv.textContent = '儲存失敗，請稍後再試';
+                errorDiv.style.display = 'block';
+            }
+            return false;
+        }
+        
+        async function loadWeightConfigs() {
+            const resp = await fetch('/polls/weight-config/');
+            const result = await resp.json();
+            let html = '<div class="cards-grid">';
+            for (const c of result.configs) {
+                html += `
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">${c.name}</h3>
+                        </div>
+                        <div class="card-content">
+                            A: ${c.score_a} | B: ${c.score_b}<br>
+                            C: ${c.score_c} | D: ${c.score_d}
+                        </div>
+                    </div>
+                `;
+            }
+            html += '</div>';
+            document.getElementById('weight-config-list').innerHTML = html;
+        }
+        
+        // 工具函數
+        function copySection(section) {
+            const text = document.getElementById('section-' + section).innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                alert('已複製到剪貼簿！');
+            });
+        }
+        
+        function downloadSection(section) {
+            const text = document.getElementById('section-' + section).innerText;
+            const blob = new Blob([text], {type: 'text/plain;charset=utf-8'});
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `${section}.txt`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        function copyText(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('已複製到剪貼簿！');
+            });
+        }
+        
+        // 顯示/隱藏 Loading
+        function showLoading() {
+            document.getElementById('loading-overlay').classList.add('show');
+        }
+        
+        function hideLoading() {
+            document.getElementById('loading-overlay').classList.remove('show');
+        }
+        
+        // 複製章節內容
+        function copySection(sectionId) {
+            const element = document.getElementById('section-' + sectionId);
+            if (element) {
+                const text = element.innerText || element.textContent;
+                copyText(text);
+            }
+        }
+        
+        // 下載章節為 MD 檔案
+        function downloadSection(sectionId, title) {
+            const element = document.getElementById('section-' + sectionId);
+            if (!element) return;
+            
+            let content = element.innerText || element.textContent;
+            
+            // 添加標題
+            const mdContent = `# ${title}\n\n${content}`;
+            
+            // 創建並下載檔案
+            const blob = new Blob([mdContent], { type: 'text/markdown;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${title}.md`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+        
+        // 下載 Mermaid 代碼為 .mmd 檔案
+        function downloadMermaidCode() {
+            const flowSection = document.getElementById('section-flow');
+            if (!flowSection) return;
+            
+            // 從原始內容或渲染後的 details 中提取 mermaid 代碼
+            const codeElement = flowSection.querySelector('details code');
+            let mermaidCode = '';
+            
+            if (codeElement) {
+                mermaidCode = codeElement.textContent;
+            } else {
+                // 嘗試從原始內容提取
+                const content = flowSection.textContent || flowSection.innerText;
+                const match = content.match(/```mermaid\s*([\s\S]*?)```/i) || 
+                              content.match(/```\s*((?:graph|flowchart)[\s\S]*?)```/i) ||
+                              content.match(/((?:graph|flowchart)\s+(?:TD|LR|TB|RL|BT)[\s\S]*?)(?=\n\n|$)/i);
+                if (match) {
+                    mermaidCode = match[1].trim();
+                }
+            }
+            
+            if (!mermaidCode) {
+                alert('找不到 Mermaid 代碼');
+                return;
+            }
+            
+            const blob = new Blob([mermaidCode], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = '流程圖.mmd';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+        
+        // 下載 Mermaid 圖表為圖片
+        function downloadMermaidImage() {
+            const mermaidDiv = document.querySelector('#section-flow .mermaid');
+            if (!mermaidDiv) {
+                alert('請先生成流程圖');
+                return;
+            }
+            
+            // 獲取 SVG 元素
+            const svg = mermaidDiv.querySelector('svg');
+            if (!svg) {
+                alert('找不到流程圖 SVG');
+                return;
+            }
+            
+            // 克隆 SVG 並設置樣式
+            const svgClone = svg.cloneNode(true);
+            svgClone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+            
+            // 序列化 SVG
+            const svgData = new XMLSerializer().serializeToString(svgClone);
+            const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+            const url = URL.createObjectURL(svgBlob);
+            
+            // 下載 SVG
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = '流程圖.svg';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+        
+        // 提取並渲染 Mermaid 圖表
+        function renderMermaidDiagrams() {
+            const flowSection = document.getElementById('section-flow');
+            if (!flowSection) {
+                console.log('Flow section not found');
+                return;
+            }
+            
+            // 獲取原始 HTML 內容
+            let content = flowSection.innerHTML;
+            console.log('Original content:', content);
+            
+            // 清理可能的 HTML 實體
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = content;
+            content = tempDiv.textContent || tempDiv.innerText;
+            
+            // 多種提取模式
+            let mermaidCode = null;
+            
+            // 模式 1: 標準 ```mermaid ... ```
+            let match = content.match(/```mermaid\s*([\s\S]*?)```/i);
+            if (match && match[1]) {
+                mermaidCode = match[1].trim();
+                console.log('Found mermaid with pattern 1');
+            }
+            
+            // 模式 2: 只有 ``` 包裹且內容包含 graph/flowchart
+            if (!mermaidCode) {
+                match = content.match(/```\s*((?:graph|flowchart|sequenceDiagram)[\s\S]*?)```/i);
+                if (match && match[1]) {
+                    mermaidCode = match[1].trim();
+                    console.log('Found mermaid with pattern 2');
+                }
+            }
+            
+            // 模式 3: 直接的 graph TD/LR 或 flowchart 語法（無代碼塊）
+            if (!mermaidCode) {
+                match = content.match(/((?:graph|flowchart)\s+(?:TD|LR|TB|RL|BT)[\s\S]*?)(?=\n\n|$)/i);
+                if (match && match[1]) {
+                    mermaidCode = match[1].trim();
+                    console.log('Found mermaid with pattern 3');
+                }
+            }
+            
+            if (mermaidCode) {
+                console.log('Mermaid code found:', mermaidCode.substring(0, 100));
+                
+                // 創建 Mermaid 容器
+                flowSection.innerHTML = `
+                    <div class="mermaid-container" style="background: white; padding: 2rem; border-radius: 8px; margin-bottom: 1rem;">
+                        <div class="mermaid">${mermaidCode}</div>
+                    </div>
+                    <details style="margin-top: 1rem;">
+                        <summary style="cursor: pointer; color: #666; font-size: 0.9rem;">查看原始代碼</summary>
+                        <pre style="background: #f5f5f5; padding: 1rem; border-radius: 8px; overflow-x: auto; margin-top: 0.5rem; font-size: 0.85rem; line-height: 1.4;"><code>${mermaidCode}</code></pre>
+                    </details>
+                `;
+                
+                // 初始化並渲染 Mermaid
+                if (typeof mermaid !== 'undefined') {
+                    try {
+                        mermaid.initialize({ 
+                            startOnLoad: false,
+                            theme: 'default',
+                            themeVariables: {
+                                primaryColor: '#2ac9de',
+                                primaryTextColor: '#333',
+                                primaryBorderColor: '#2ac9de',
+                                lineColor: '#999',
+                                secondaryColor: '#f087f4',
+                                tertiaryColor: '#fff'
+                            },
+                            flowchart: {
+                                useMaxWidth: true,
+                                htmlLabels: true,
+                                curve: 'basis'
+                            }
+                        });
+                        mermaid.run();
+                        console.log('Mermaid rendered successfully');
+                    } catch (error) {
+                        console.error('Mermaid render error:', error);
+                        flowSection.innerHTML = '<p style="color: #e74c3c;">流程圖渲染失敗：' + error.message + '</p><pre>' + mermaidCode + '</pre>';
+                    }
+                } else {
+                    console.error('Mermaid library not loaded');
+                }
+            } else {
+                console.log('No mermaid code found in content');
+            }
+        }
+        
+        // 初始化
+        window.onload = function() {
+            loadWeightConfigs();
+            // 延遲渲染以確保 DOM 完全載入
+            setTimeout(renderMermaidDiagrams, 100);
+            // 頁面載入完成後隱藏 Loading
+            hideLoading();
+        };
+        
+        // 如果是表單提交後回來的，確保隱藏 Loading
+        document.addEventListener('DOMContentLoaded', function() {
+            hideLoading();
+        });
+    </script>
+</body>
+</html>
